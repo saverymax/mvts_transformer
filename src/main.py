@@ -59,6 +59,7 @@ def main(config):
     # Build data
     logger.info("Loading and preprocessing data ...")
     data_class = data_factory[config['data_class']]
+	# Pattern will be train or test
     my_data = data_class(config['data_dir'], pattern=config['pattern'], n_proc=config['n_proc'], limit_size=config['limit_size'], config=config)
     feat_dim = my_data.feature_df.shape[1]  # dimensionality of data features
     if config['task'] == 'classification':
@@ -238,6 +239,7 @@ def main(config):
     metrics.append(list(metrics_values))
 
     logger.info('Starting training...')
+    sys.exit()
     for epoch in tqdm(range(start_epoch + 1, config["epochs"] + 1), desc='Training Epoch', leave=False):
         mark = epoch if config['save_all'] else 'last'
         epoch_start_time = time.time()

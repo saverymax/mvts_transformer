@@ -96,6 +96,61 @@ class BaseData(object):
             self.n_proc = min(n_proc, cpu_count())
 
 
+class BxlData(BaseData):
+    """
+    Class for Brussels dataset, including traffic data, air pollution data, and infection rates
+
+	From TSRegression class
+		Attributes:
+        all_df: (num_samples * seq_len, num_columns) dataframe indexed by integer indices, with multiple rows corresponding to the same index (sample).
+            Each row is a time step; Each column contains either metadata (e.g. timestamp) or a feature.
+        feature_df: (num_samples * seq_len, feat_dim) dataframe; contains the subset of columns of `all_df` which correspond to selected features
+        feature_names: names of columns contained in `feature_df` (same as feature_df.columns)
+        all_IDs: (num_samples,) series of IDs contained in `all_df`/`feature_df` (same as all_df.index.unique() )
+        labels_df: (num_samples, num_labels) pd.DataFrame of label(s) for each sample
+        max_seq_len: maximum sequence (time series) length. If None, script argument `max_seq_len` will be used.
+            (Moreover, script argument overrides this attribute)
+
+    TODO: Finish loading data and make sure it loads with the model. I think I need to index with dates,
+    """
+
+    def __init__(self, root_dir, chem=None, file_list=None, pattern=None, n_proc=1, limit_size=None, config=None):
+        """
+        Initiate class for air pollution following structure of TSRegression class
+        """
+        self.config = config
+
+        self.all_df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
+        self.all_df.set_index(keys="time")
+        # chem will be pollutant to predict
+        self.labels_df = self.all_df["NO2"].to_frame()
+
+        logging.info("printing dataframe")
+        logging.info(self.all_df)
+        logging.info("printing labels")
+        print(self.labels_df)
+
+        self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
+        print(self.all_IDs)
+
+        if limit_size is not None:
+            if limit_size > 1:
+                limit_size = int(limit_size)
+            else:  # interpret as proportion if in (0, 1]
+                limit_size = int(limit_size * len(self.all_IDs))
+            self.all_IDs = self.all_IDs[:limit_size]
+            self.all_df = self.all_df.loc[self.all_IDs]
+
+        # use all features
+        self.feature_names = self.all_df.columns
+        self.feature_df = self.all_df
+        num_stations = 1
+        self.max_seq_len = num_stations
+
+    
+
+
+
 class HDD_data(BaseData):
     """
     Dataset class for Hard Drive Disk failure dataset # TODO: INCOMPLETE: does not follow other datasets format
@@ -307,6 +362,16 @@ class TSRegressionArchive(BaseData):
         self.config = config
 
         self.all_df, self.labels_df = self.load_all(root_dir, file_list=file_list, pattern=pattern)
+
+        logging.info("printing dataframe")
+        logging.info(self.all_df)
+        logging.info("df shape")
+        logging.info(self.all_df.shape)
+        logging.info("Printing labels")
+        logging.info(self.labels_df)
+        logging.info("seq len")
+        logging.info(self.max_seq_len)
+
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
 
         if limit_size is not None:
@@ -377,6 +442,10 @@ class TSRegressionArchive(BaseData):
                                                                  replace_missing_vals_with='NaN')
             labels_df = None
 
+        #logging.info("initial df")
+        #logging.info(df.shape)
+
+        # Will check number of stations per timepoint.
         lengths = df.applymap(lambda x: len(x)).values  # (num_samples, num_dimensions) array containing the length of each series
         horiz_diffs = np.abs(lengths - np.expand_dims(lengths[:, 0], -1))
 
@@ -399,6 +468,7 @@ class TSRegressionArchive(BaseData):
         # First create a (seq_len, feat_dim) dataframe for each sample, indexed by a single integer ("ID" of the sample)
         # Then concatenate into a (num_samples * seq_len, feat_dim) dataframe, with multiple rows corresponding to the
         # sample index (i.e. the same scheme as all datasets in this project)
+        # From Bxl work: In plain English, the seq len will be the number of measuring stations at each timepoint.
         df = pd.concat((pd.DataFrame({col: df.loc[row, col] for col in df.columns}).reset_index(drop=True).set_index(
             pd.Series(lengths[row, 0]*[row])) for row in range(df.shape[0])), axis=0)
 
@@ -733,6 +803,7 @@ class PMUData(BaseData):
 
         self.all_df = self.load_all(root_dir, file_list=file_list, pattern=pattern)
 
+
         if config['data_window_len'] is not None:
             self.max_seq_len = config['data_window_len']
             # construct sample IDs: 0, 0, ..., 0, 1, 1, ..., 1, 2, ..., (num_whole_samples - 1)
@@ -801,6 +872,7 @@ class PMUData(BaseData):
         else:  # read 1 file at a time
             all_df = pd.concat(PMUData.load_single(path) for path in input_paths)
 
+
         return all_df
 
     @staticmethod
@@ -823,8 +895,10 @@ class PMUData(BaseData):
 
 
 
+# Add class for Brussels data
 data_factory = {'weld': WeldData,
                 'hdd': HDD_data,
                 'tsra': TSRegressionArchive,
                 'semicond': SemicondTraceData,
-                'pmu': PMUData}
+                'pmu': PMUData,
+				'bxl': BxlData}
