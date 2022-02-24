@@ -120,18 +120,29 @@ class BxlData(BaseData):
         """
         self.config = config
 
-        self.all_df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
-        self.all_df.set_index(keys="time")
+        df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
+        df.sort_values(by=["station", "time"], ascending=[True, True], inplace=True)
+        df.set_index(keys="station", inplace=True)
+        # Don't need to do this.
+        # Create numeric index
+        #index_n = list(np.repeat(list(range(1, 41+1)), df.loc[df.index[0]].shape[0]))
+        #assert len(index_n) == df.shape[0]
+        #df['numeric_index'] = index_n
+        #df.set_index(keys="numeric_index", inplace=True)
+        self.all_df = df[["pm25", "pm10","no2","covid", "traffic_vol"]]
+        self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         # chem will be pollutant to predict
-        self.labels_df = self.all_df["NO2"].to_frame()
+        # For pretraining imputation I don't need labels I think
+        self.labels_df = None
+        #self.labels_df = self.all_df["no2"].to_frame()
 
         logging.info("printing dataframe")
         logging.info(self.all_df)
         logging.info("printing labels")
         print(self.labels_df)
 
-        self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         print(self.all_IDs)
+        logging.info(type(self.all_IDs))
 
         if limit_size is not None:
             if limit_size > 1:
@@ -144,8 +155,11 @@ class BxlData(BaseData):
         # use all features
         self.feature_names = self.all_df.columns
         self.feature_df = self.all_df
-        num_stations = 1
-        self.max_seq_len = num_stations
+        series_len = df.loc[df.index[0]].shape[0] # Should be 458
+        assert series_len == 458
+        logging.info("series length")
+        logging.info(series_len)
+        self.max_seq_len = series_len
 
     
 
@@ -365,6 +379,7 @@ class TSRegressionArchive(BaseData):
 
         logging.info("printing dataframe")
         logging.info(self.all_df)
+        logging.info(self.all_df.loc[0,:])
         logging.info("df shape")
         logging.info(self.all_df.shape)
         logging.info("Printing labels")
@@ -373,6 +388,9 @@ class TSRegressionArchive(BaseData):
         logging.info(self.max_seq_len)
 
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
+        logging.info("ids")
+        logging.info(self.all_IDs)
+        logging.info(type(self.all_IDs))
 
         if limit_size is not None:
             if limit_size > 1:
@@ -445,7 +463,6 @@ class TSRegressionArchive(BaseData):
         #logging.info("initial df")
         #logging.info(df.shape)
 
-        # Will check number of stations per timepoint.
         lengths = df.applymap(lambda x: len(x)).values  # (num_samples, num_dimensions) array containing the length of each series
         horiz_diffs = np.abs(lengths - np.expand_dims(lengths[:, 0], -1))
 
@@ -468,13 +485,16 @@ class TSRegressionArchive(BaseData):
         # First create a (seq_len, feat_dim) dataframe for each sample, indexed by a single integer ("ID" of the sample)
         # Then concatenate into a (num_samples * seq_len, feat_dim) dataframe, with multiple rows corresponding to the
         # sample index (i.e. the same scheme as all datasets in this project)
-        # From Bxl work: In plain English, the seq len will be the number of measuring stations at each timepoint.
         df = pd.concat((pd.DataFrame({col: df.loc[row, col] for col in df.columns}).reset_index(drop=True).set_index(
             pd.Series(lengths[row, 0]*[row])) for row in range(df.shape[0])), axis=0)
 
         # Replace NaN values
         grp = df.groupby(by=df.index)
+        logging.info("df types")
+        logging.info(type(grp))
         df = grp.transform(interpolate_missing)
+        logging.info(type(df))
+    
 
         return df, labels_df
 
