@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#PBS -N beijing_pretrain
+#PBS -o  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -e  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -l walltime=00:10:00 
+#PBS -l nodes=1:ppn=9:gpus=1:skylake 
+#PBS -l partition=gpu 
+#PBS -l pmem=5gb 
+#PBS -A default_project
+source $VSC_DATA/miniconda3/bin/activate mvts
+python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "pretraining through imputation" --name BeijingPM25Quality_pretraining --records_file Imputation_records.xls --data_dir $VSC_DATA/thesis/data/monash_data/BeijingPM25Quality/ --data_class tsra --pattern TRAIN --val_ratio 0.2 --epochs 1 --lr 0.001 --optimizer RAdam --batch_size 32 --pos_encoding learnable --d_model 128
