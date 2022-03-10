@@ -239,7 +239,6 @@ def main(config):
     metrics.append(list(metrics_values))
 
     logger.info('Starting training...')
-    sys.exit()
     for epoch in tqdm(range(start_epoch + 1, config["epochs"] + 1), desc='Training Epoch', leave=False):
         mark = epoch if config['save_all'] else 'last'
         epoch_start_time = time.time()
