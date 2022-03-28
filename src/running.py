@@ -45,6 +45,8 @@ def pipeline_factory(config):
                        start_hint=config['start_hint'], end_hint=config['end_hint']), collate_unsuperv, UnsupervisedRunner
     if (task == "classification") or (task == "regression"):
         return ClassiregressionDataset, collate_superv, SupervisedRunner
+    if task == "forecast":
+        return ForecastDataset, collate_forecast, ForecastRunner
     else:
         raise NotImplementedError("Task '{}' not implemented".format(task))
 
@@ -269,6 +271,11 @@ class BaseRunner(object):
         self.printer.print(dyn_string)
 
 
+class ForecastRunner(BaseRunner):
+    
+    def train_epoch(self, epoch_num=None):
+        pass
+
 class UnsupervisedRunner(BaseRunner):
 
     def train_epoch(self, epoch_num=None):
@@ -283,11 +290,26 @@ class UnsupervisedRunner(BaseRunner):
             targets = targets.to(self.device)
             target_masks = target_masks.to(self.device)  # 1s: mask and predict, 0s: unaffected input (ignore)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
+            logging.info("target and padding masks during pretraining")
+            logging.info(target_masks.shape)
+            logging.info(padding_masks.shape)
+            logging.info("target mask print")
+            logging.info(target_masks)
+            logging.info("padding mask print")
+            logging.info(padding_masks)
 
+            # 
             predictions = self.model(X.to(self.device), padding_masks)  # (batch_size, padded_length, feat_dim)
 
             # Cascade noise masks (batch_size, padded_length, feat_dim) and padding masks (batch_size, padded_length)
             target_masks = target_masks * padding_masks.unsqueeze(-1)
+            logging.info("cascaded masks")
+            logging.info(target_masks.shape)
+            logging.info(target_masks)
+            # From the paper:
+            # Predictions are made on full sequences.
+            # but only the predictions on the masked values are considered in the Mean Squared Error loss
+            # This is why no target mask is passed to model 
             loss = self.loss_module(predictions, targets, target_masks)  # (num_active,) individual loss (square error per element) for each active value in batch
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over active elements) used for optimization

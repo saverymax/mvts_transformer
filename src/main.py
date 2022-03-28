@@ -202,6 +202,9 @@ def main(config):
         return
     
     # Initialize data generators
+    # Runner class will be SupervisedRunner from running.py 
+    # Collate_fn is important, will return 
+    # X, targets, padding_masks, ids used by trainer
     dataset_class, collate_fn, runner_class = pipeline_factory(config)
     val_dataset = dataset_class(val_data, val_indices)
 
@@ -242,6 +245,8 @@ def main(config):
     for epoch in tqdm(range(start_epoch + 1, config["epochs"] + 1), desc='Training Epoch', leave=False):
         mark = epoch if config['save_all'] else 'last'
         epoch_start_time = time.time()
+        # train_epoch method is from *Runner class in running.py
+        # The method for doing the main training
         aggr_metrics_train = trainer.train_epoch(epoch)  # dictionary of aggregate epoch metrics
         epoch_runtime = time.time() - epoch_start_time
         print()

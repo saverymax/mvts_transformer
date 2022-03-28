@@ -1,5 +1,6 @@
 from typing import Optional, Any
 import math
+import logging
 
 import torch
 from torch import nn, Tensor
@@ -179,6 +180,14 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
         Shape:
             see the docs in Transformer class.
         """
+        logging.info("src data")
+        logging.info(src.shape)
+        logging.info("src mask")
+        logging.info(src_mask)
+        #logging.info(src_mask.shape)
+        logging.info("src padding mask")
+        logging.info(src_key_padding_mask)
+        logging.info(src_key_padding_mask.shape)
         src2 = self.self_attn(src, src, src, attn_mask=src_mask,
                               key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(src2)  # (seq_len, batch_size, d_model)
@@ -311,4 +320,3 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         output = self.output_layer(output)  # (batch_size, num_classes)
 
         return output
-

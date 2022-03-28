@@ -133,7 +133,7 @@ class BxlData(BaseData):
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         # chem will be pollutant to predict
         # For pretraining imputation I don't need labels I think
-        self.labels_df = None
+        self.labels_df = pd.DataFrame(self.all_df["no2"], dtype=np.float32)
         #self.labels_df = self.all_df["no2"].to_frame()
 
         logging.info("printing dataframe")
