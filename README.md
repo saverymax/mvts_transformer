@@ -28,7 +28,7 @@ series = {KDD '21}
 
 ## Setup
 
-_Instructions refer to Unix-based systems (e.g. Linux, MacOS)._
+_Instructions refer to Unix-based systems (e.g. Linux, MacOS)._ Note that the following has been altered from the previous implementation to account for forecasting.
 
 `cd mvts_transformer/`
 
@@ -49,6 +49,8 @@ Download dataset files and place them in separate directories, one for regressio
 Classification: http://www.timeseriesclassification.com/Downloads/Archives/Multivariate2018_ts.zip
 
 Regression: https://zenodo.org/record/3902651#.YB5P0OpOm3s
+
+Forecasting: See https://github.com/saverymax/multi-modal-pollution. 
 
 ## Example commands
 
