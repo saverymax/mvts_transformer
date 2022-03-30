@@ -192,15 +192,25 @@ class ForecastDataset(Dataset):
 
 def forecast_mask(X):
     """
-    Creates boolean mask of the same shape as k, with 0s where features should be masked, for autoregressive forecasting.
+    Creates boolean mask of the same shape as k, with 1s where features should be masked, for autoregressive forecasting.
     See https://github.com/idiap/fast-transformers/blob/2fe048a14c2e67787f553e899123ca4ba9f27e76/fast_transformers/masking.py#L204
     Args:
         X: (seq_length, feat_dim) numpy array of features corresponding to a single sample
 
     Returns: 
-        boolean numpy array with the same shape as X, with 0s at places where a feature should be masked
+        boolean numpy array of dimension (max_len, max_len), with 1s at places where a feature should be masked
     """
-    mask = torch.triu(torch.ones(5,5),1).transpose(0,1)
+    lengths = [X.shape[0] for X in features]  # original sequence length for each time series
+    if max_len is None:
+        max_len = max(lengths)
+    
+    mask = torch.triu(torch.ones(max_len, max_len),1).transpose(0,1)
+    # torch.zeroes...
+    logging.info(mask)
+    # Invert for Pytorch
+    # https://github.com/pytorch/pytorch/blob/9233af181f5459793885ed9ddb1fdddcb543fd44/torch/nn/functional.py#L5059
+    mask = ~mask
+    logging.info(mask)
     #lengths = torch.arange(1, N+1)
     #indices = torch.arange(self._max_len, device=self._device)
     #mask = indices.view(1, -1) < lengths.view(-1, 1)
@@ -239,15 +249,17 @@ def collate_forecast(data, max_len=None):
     for i in range(batch_size):
         end = min(lengths[i], max_len)
         X[i, :end, :] = features[i][:end, :]
+        # TODO: Why do this?
         target_masks[i, :end, :] = masks[i][:end, :]
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
     # TODO: Why do we need this?
     # In unsuperv, it is done for the input, but do I need to apply it here or can I just in the model?
-    X = X * target_masks  # mask input
+    # X = X * target_masks  # mask input
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len) # (batch_size, padded_length) boolean tensor, "1" means keep
-    target_masks = ~target_masks  # inverse logic: 0 now means ignore, 1 means predict
+    # TODO: Necessary?
+    # target_masks = ~target_masks  # inverse logic: 0 now means ignore, 1 means predict
 
     return X, targets, target_masks, padding_masks, IDs
 
