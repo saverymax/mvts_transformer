@@ -273,8 +273,108 @@ class BaseRunner(object):
 
 class ForecastRunner(BaseRunner):
     
+    def __init__(self, *args, **kwargs):
+
+        super(ForecastRunner, self).__init__(*args, **kwargs)
+    
     def train_epoch(self, epoch_num=None):
-        pass
+        """
+        Training method for forecasting. Copied from SupervisedRunner, 
+        but including the forecasting mask.
+        """
+        
+        self.model = self.model.train()
+
+        epoch_loss = 0  # total loss of epoch
+        total_samples = 0  # total samples in epoch
+
+        for i, batch in enumerate(self.dataloader):
+
+            # Batch will be the 
+            X, targets, target_masks, padding_masks, IDs = batch
+            targets = targets.to(self.device)
+            target_masks = target_masks.to(self.device)
+            padding_masks = padding_masks.to(self.device)  # 0s: ignore
+            # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
+            # One of the main differences between this loop and the regression/
+            # classification training loops is that the target masks are passed to the model. 
+            # The training proceeds in the same way as the supervised methods after this.
+            predictions = self.model(X.to(self.device), target_masks, padding_masks)
+
+            loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
+            batch_loss = torch.sum(loss)
+            mean_loss = batch_loss / len(loss)  # mean loss (over samples) used for optimization
+
+            if self.l2_reg:
+                total_loss = mean_loss + self.l2_reg * l2_reg_loss(self.model)
+            else:
+                total_loss = mean_loss
+
+            # Zero gradients, perform a backward pass, and update the weights.
+            self.optimizer.zero_grad()
+            total_loss.backward()
+
+            # torch.nn.utils.clip_grad_value_(self.model.parameters(), clip_value=1.0)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=4.0)
+            self.optimizer.step()
+
+            metrics = {"loss": mean_loss.item()}
+            if i % self.print_interval == 0:
+                ending = "" if epoch_num is None else 'Epoch {} '.format(epoch_num)
+                self.print_callback(i, metrics, prefix='Training ' + ending)
+
+            with torch.no_grad():
+                total_samples += len(loss)
+                epoch_loss += batch_loss.item()  # add total loss of batch
+
+        epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
+        self.epoch_metrics['epoch'] = epoch_num
+        self.epoch_metrics['loss'] = epoch_loss
+        return self.epoch_metrics
+
+    def evaluate(self, epoch_num=None, keep_all=True):
+
+        self.model = self.model.eval()
+
+        epoch_loss = 0  # total loss of epoch
+        total_samples = 0  # total samples in epoch
+
+        per_batch = {'target_masks': [], 'targets': [], 'predictions': [], 'metrics': [], 'IDs': []}
+        for i, batch in enumerate(self.dataloader):
+
+            X, targets, target_masks, padding_masks, IDs = batch
+            targets = targets.to(self.device)
+            target_masks = target_masks.to(self.device)
+            padding_masks = padding_masks.to(self.device)  # 0s: ignore
+            # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
+            predictions = self.model(X.to(self.device), target_masks, padding_masks)
+
+            loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
+            batch_loss = torch.sum(loss).cpu().item()
+            mean_loss = batch_loss / len(loss)  # mean loss (over samples)
+
+            per_batch['targets'].append(targets.cpu().numpy())
+            per_batch['predictions'].append(predictions.cpu().numpy())
+            per_batch['metrics'].append([loss.cpu().numpy()])
+            per_batch['IDs'].append(IDs)
+
+            metrics = {"loss": mean_loss}
+            if i % self.print_interval == 0:
+                ending = "" if epoch_num is None else 'Epoch {} '.format(epoch_num)
+                self.print_callback(i, metrics, prefix='Evaluating ' + ending)
+
+            total_samples += len(loss)
+            epoch_loss += batch_loss  # add total loss of batch
+
+        epoch_loss = epoch_loss / total_samples  # average loss per element for whole epoch
+        self.epoch_metrics['epoch'] = epoch_num
+        self.epoch_metrics['loss'] = epoch_loss
+
+        if keep_all:
+            return self.epoch_metrics, per_batch
+        else:
+            return self.epoch_metrics
+
 
 class UnsupervisedRunner(BaseRunner):
 
@@ -301,6 +401,7 @@ class UnsupervisedRunner(BaseRunner):
             # 
             predictions = self.model(X.to(self.device), padding_masks)  # (batch_size, padded_length, feat_dim)
 
+            # TODO: Why cascade the masks? It might not matter for my forecasting stuffs.
             # Cascade noise masks (batch_size, padded_length, feat_dim) and padding masks (batch_size, padded_length)
             target_masks = target_masks * padding_masks.unsqueeze(-1)
             logging.info("cascaded masks")
