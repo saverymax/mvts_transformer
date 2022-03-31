@@ -260,6 +260,8 @@ class TSTransformerEncoderClassiregressor(nn.Module):
     """
     Simplest classifier/regressor. Can be either regressor or classifier because the output does not include
     softmax. Concatenates final layer embeddings and uses 0s to ignore padding embeddings in final output layer.
+
+    This class will be fore finetuning regression, classification, or forecasting.
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
