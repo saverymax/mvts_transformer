@@ -19,7 +19,7 @@ import sklearn
 
 from utils import utils, analysis
 from models.loss import l2_reg_loss
-from datasets.dataset import ImputationDataset, TransductionDataset, ClassiregressionDataset, collate_unsuperv, collate_superv
+from datasets.dataset import ImputationDataset, TransductionDataset, ClassiregressionDataset, ForecastDataset, collate_unsuperv, collate_superv, collate_forecast
 
 
 logger = logging.getLogger('__main__')
@@ -526,6 +526,12 @@ class SupervisedRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
+            logging.info("Loss eval")
+            logging.info("targets")
+            logging.info(targets.shape)
+            logging.info("preds")
+            logging.info(predictions.shape)
+            
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over samples) used for optimization
