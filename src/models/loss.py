@@ -13,7 +13,7 @@ def get_loss_module(config):
     if task == "classification":
         return NoFussCrossEntropyLoss(reduction='none')  # outputs loss for each batch sample
 
-    if task == "regression":
+    if task == "regression" or task == "forecast":
         return nn.MSELoss(reduction='none')  # outputs loss for each batch sample
 
     else:
