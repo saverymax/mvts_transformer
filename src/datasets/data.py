@@ -133,6 +133,7 @@ class BxlData(BaseData):
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         # chem will be pollutant to predict
         # For pretraining imputation I don't need labels I think
+        # TODO: add in chemical selection
         self.labels_df = pd.DataFrame(self.all_df["no2"], dtype=np.float32)
         #self.labels_df = self.all_df["no2"].to_frame()
 
@@ -160,9 +161,6 @@ class BxlData(BaseData):
         logging.info("series length")
         logging.info(series_len)
         self.max_seq_len = series_len
-
-    
-
 
 
 class HDD_data(BaseData):
@@ -443,7 +441,7 @@ class TSRegressionArchive(BaseData):
 
         # Every row of the returned df corresponds to a sample;
         # every column is a pd.Series indexed by timestamp and corresponds to a different dimension (feature)
-        if self.config['task'] == 'regression':
+        if (self.config['task'] == 'regression') or (self.config['task'] == 'forecast'):
             df, labels = utils.load_from_tsfile_to_dataframe(filepath, return_separate_X_and_y=True, replace_missing_vals_with='NaN')
             labels_df = pd.DataFrame(labels, dtype=np.float32)
         elif self.config['task'] == 'classification':
@@ -606,7 +604,7 @@ class SemicondTraceData(BaseData):
         self.all_IDs = self.all_df.index.unique()  # all sample (session) IDs
 
         # TODO: select prediction objective here: any of ['Mean_dep_rate', 'std_thickness', 'mean_thickness']
-        if config['task'] == 'regression':
+        if (config['task'] == 'regression') or (config['task'] == 'forecast'):
             labels_col = config['labels'] if config['labels'] else 'Mean_dep_rate'
             self.labels_df = pd.DataFrame(metadata_df.loc[self.all_IDs, labels_col], dtype=np.float32)
             self.labels_df = self.labels_df[~self.labels_df[labels_col].isna()]

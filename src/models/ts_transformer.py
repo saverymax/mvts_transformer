@@ -32,7 +32,7 @@ def model_factory(config, data):
                                         pos_encoding=config['pos_encoding'], activation=config['activation'],
                                         norm=config['normalization_layer'], freeze=config['freeze'])
 
-    if (task == "classification") or (task == "regression"):
+    if (task == "classification") or (task == "regression") or (task == "forecast"):
         num_labels = len(data.class_names) if task == "classification" else data.labels_df.shape[1]  # dimensionality of labels
         if config['model'] == 'LINEAR':
             return DummyTSTransformerEncoderClassiregressor(feat_dim, max_seq_len, config['d_model'],
@@ -294,11 +294,17 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         # add F.log_softmax and use NLLoss
         return output_layer
 
-    def forward(self, X, padding_masks):
+    def forward(self, X, padding_masks, src_masks: Optional[Tensor] = None):
         """
+        Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
+        TSTransformerEncoder, is for imputation. See the model factory at the beginning of this script.
+
         Args:
             X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
             padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
+            src_masks: (L, S) L is the target sequence length, and S is the source sequence length. 
+                    boolean tensor, 1 means keep vector at this position, 0 means padding
+                    See https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
         Returns:
             output: (batch_size, num_classes)
         """
@@ -309,7 +315,7 @@ class TSTransformerEncoderClassiregressor(nn.Module):
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
+        output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
