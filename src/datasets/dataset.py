@@ -118,6 +118,9 @@ def collate_superv(data, max_len=None):
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
 
+    logging.info("collate targets shape")
+    logging.info(targets.shape)
+
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16),
                                  max_len=max_len)  # (batch_size, padded_length) boolean tensor, "1" means keep
 
@@ -179,12 +182,15 @@ class ForecastDataset(Dataset):
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
+        logging.info("labels in forecast dataset")
+        logging.info(y) 
+        logging.info(y.shape)
         mask = forecast_mask(X) 
         logging.info("forecast mask")
         logging.info(mask.shape)
         logging.info(mask)
 
-        return torch.from_numpy(X), torch.from_numpy(y), torch.from_numpy(mask), self.IDs[ind]
+        return torch.from_numpy(X), torch.from_numpy(y), mask, self.IDs[ind]
 
     def __len__(self):
         return len(self.IDs)
@@ -198,19 +204,12 @@ def forecast_mask(X):
         X: (seq_length, feat_dim) numpy array of features corresponding to a single sample
 
     Returns: 
-        boolean numpy array of dimension (max_len, max_len), with 1s at places where a feature should be masked
+        boolean numpy array of dimension (max_len, max_len), with True at places where a feature should be masked
     """
-    lengths = [X.shape[0] for X in features]  # original sequence length for each time series
-    if max_len is None:
-        max_len = max(lengths)
-    
-    mask = torch.triu(torch.ones(max_len, max_len),1).transpose(0,1)
-    # torch.zeroes...
-    logging.info(mask)
+    seq_len = X.shape[0] 
+    mask = ~torch.triu(torch.ones(seq_len, seq_len)>0,1).transpose(0,1)
     # Invert for Pytorch
     # https://github.com/pytorch/pytorch/blob/9233af181f5459793885ed9ddb1fdddcb543fd44/torch/nn/functional.py#L5059
-    mask = ~mask
-    logging.info(mask)
     #lengths = torch.arange(1, N+1)
     #indices = torch.arange(self._max_len, device=self._device)
     #mask = indices.view(1, -1) < lengths.view(-1, 1)
@@ -219,6 +218,8 @@ def forecast_mask(X):
 
 def collate_forecast(data, max_len=None):
     """Build mini-batch tensors from a list of (X, mask) tuples. Mask input. Create
+    A little discussion of the collate function:
+        https://discuss.pytorch.org/t/how-to-use-collate-fn/27181/3
     Args:
         data: len(batch_size) list of tuples (X, y).
             - X: torch tensor of shape (seq_length, feat_dim); variable seq_length.
@@ -233,6 +234,7 @@ def collate_forecast(data, max_len=None):
             0 indicates masked values to be predicted, 1 indicates unaffected/"active" feature values
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
+    #TODO: Update this documentation
 
     batch_size = len(data)
     features, labels, masks, IDs = zip(*data)
@@ -242,24 +244,22 @@ def collate_forecast(data, max_len=None):
     if max_len is None:
         max_len = max(lengths)
     X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
-    target_masks = torch.zeros_like(X,
-                                    dtype=torch.bool)  # (batch_size, padded_length, feat_dim) masks related to objective
-    logging.info("other collate masks")
-    logging.info(masks)
+    target_masks = torch.zeros_like(torch.ones(X.shape[0], max_len, max_len),
+                                    dtype=torch.bool)  # (batch_size, max len , max_len) masks related to objective
+    #logging.info("other collate masks")
+    #logging.info(masks)
+    end = max_len
+    # Don't really need this end part if I know all sequence lenths will be the same.
     for i in range(batch_size):
-        end = min(lengths[i], max_len)
         X[i, :end, :] = features[i][:end, :]
-        # TODO: Why do this?
+        # Add batch dimension to masks
         target_masks[i, :end, :] = masks[i][:end, :]
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
-    # TODO: Why do we need this?
-    # In unsuperv, it is done for the input, but do I need to apply it here or can I just in the model?
-    # X = X * target_masks  # mask input
+    #logging.info("collate targets shape")
+    #logging.info(targets.shape)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len) # (batch_size, padded_length) boolean tensor, "1" means keep
-    # TODO: Necessary?
-    # target_masks = ~target_masks  # inverse logic: 0 now means ignore, 1 means predict
 
     return X, targets, target_masks, padding_masks, IDs
 
