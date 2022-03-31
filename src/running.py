@@ -299,7 +299,9 @@ class ForecastRunner(BaseRunner):
             # One of the main differences between this loop and the regression/
             # classification training loops is that the target masks are passed to the model. 
             # The training proceeds in the same way as the supervised methods after this.
-            predictions = self.model(X.to(self.device), target_masks, padding_masks)
+            # Note that the target masks are the last argument because the target_masks must be left as optional. 
+            # This is because there are no masks of targets in reg/classification.
+            predictions = self.model(X.to(self.device), padding_masks, target_masks[0])
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
@@ -347,7 +349,7 @@ class ForecastRunner(BaseRunner):
             target_masks = target_masks.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
-            predictions = self.model(X.to(self.device), target_masks, padding_masks)
+            predictions = self.model(X.to(self.device), padding_masks, target_masks[0])
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss).cpu().item()

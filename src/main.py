@@ -203,8 +203,8 @@ def main(config):
     
     # Initialize data generators
     # Runner class will be SupervisedRunner from running.py 
-    # Collate_fn is important, will return 
-    # X, targets, padding_masks, ids used by trainer
+    # Collate_fn will return 
+    # X, targets, target_masks and/or padding_masks, ids used by trainer
     dataset_class, collate_fn, runner_class = pipeline_factory(config)
     val_dataset = dataset_class(val_data, val_indices)
 
