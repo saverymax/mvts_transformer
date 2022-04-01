@@ -32,7 +32,7 @@ def model_factory(config, data):
                                         pos_encoding=config['pos_encoding'], activation=config['activation'],
                                         norm=config['normalization_layer'], freeze=config['freeze'])
 
-    if (task == "classification") or (task == "regression") or (task == "forecast"):
+    if (task == "classification") or (task == "regression"):
         num_labels = len(data.class_names) if task == "classification" else data.labels_df.shape[1]  # dimensionality of labels
         if config['model'] == 'LINEAR':
             return DummyTSTransformerEncoderClassiregressor(feat_dim, max_seq_len, config['d_model'],
@@ -50,6 +50,15 @@ def model_factory(config, data):
                                                         dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                         activation=config['activation'],
                                                         norm=config['normalization_layer'], freeze=config['freeze'])
+    if (task == "forecast"):
+        return TSTransformerEncoderForecast(feat_dim, max_seq_len, config['d_model'],
+                                                config['num_heads'],
+                                                config['num_layers'], config['dim_feedforward'],
+                                                num_classes=max_seq_len,
+                                                dropout=config['dropout'], pos_encoding=config['pos_encoding'],
+                                                activation=config['activation'],
+                                                norm=config['normalization_layer'], freeze=config['freeze'])
+
     else:
         raise ValueError("Model class for task '{}' does not exist".format(task))
 
@@ -352,7 +361,7 @@ class TSTransformerEncoderForecast(nn.Module):
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
                  dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False):
-        super(TSTransformerEncoderClassiregressor, self).__init__()
+        super(TSTransformerEncoderForecast, self).__init__()
 
         self.max_len = max_len
         self.d_model = d_model
@@ -373,6 +382,7 @@ class TSTransformerEncoderForecast(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
 
         self.feat_dim = feat_dim
+        # Num classes will be the length of the sequence.
         self.num_classes = num_classes
         self.output_layer = self.build_output_module(d_model, max_len, num_classes)
 
