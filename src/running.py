@@ -302,6 +302,7 @@ class ForecastRunner(BaseRunner):
             # Note that the target masks are the last argument because the target_masks must be left as optional. 
             # This is because there are no masks of targets in reg/classification.
             predictions = self.model(X.to(self.device), padding_masks, target_masks[0])
+        
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
@@ -394,11 +395,10 @@ class UnsupervisedRunner(BaseRunner):
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             logging.info("target and padding masks during pretraining")
             logging.info(target_masks.shape)
-            logging.info(padding_masks.shape)
-            logging.info("target mask print")
+            #logging.info(padding_masks.shape)
             logging.info(target_masks)
-            logging.info("padding mask print")
-            logging.info(padding_masks)
+            #logging.info("padding mask print")
+            #logging.info(padding_masks)
 
             # 
             predictions = self.model(X.to(self.device), padding_masks)  # (batch_size, padded_length, feat_dim)
