@@ -160,7 +160,8 @@ class BxlData(BaseData):
         assert series_len == 458
         logging.info("series length")
         logging.info(series_len)
-        self.max_seq_len = series_len
+        # For forecasting with our set horizon, we will have to decrease this
+        self.max_seq_len = series_len - 1
 
 
 class HDD_data(BaseData):

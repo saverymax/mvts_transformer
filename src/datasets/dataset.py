@@ -181,19 +181,31 @@ class ForecastDataset(Dataset):
         """
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
+        logging.info("get item shape:")
+        logging.info(X.shape)
+        # Remove last sequence element
+        X = X[:-1, :]  
+        logging.info(X.shape)
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
+        # Remove the first label
+        logging.info("y shape")
+        logging.info(y.shape)
+        y = y[1:]
+        logging.info(y.shape)
+        
         logging.info("labels in forecast dataset")
         logging.info(y) 
         logging.info(y.shape)
         mask = forecast_mask(X) 
-        logging.info("forecast mask")
-        logging.info(mask.shape)
-        logging.info(mask)
+        #logging.info("forecast mask")
+        #logging.info(mask.shape)
+        #logging.info(mask)
+        # TODO: self.IDS will be weird now that I have changed the forecast.:
 
         return torch.from_numpy(X), torch.from_numpy(y), mask, self.IDs[ind]
 
     def __len__(self):
-        return len(self.IDs)
+        return len(self.IDs) - 1
 
 
 def forecast_mask(X):
@@ -207,9 +219,13 @@ def forecast_mask(X):
         boolean numpy array of dimension (max_len, max_len), with True at places where a feature should be masked
     """
     seq_len = X.shape[0] 
-    mask = ~torch.triu(torch.ones(seq_len, seq_len)>0,1).transpose(0,1)
+    #mask = ~torch.triu(torch.ones(seq_len, seq_len)>0,1).transpose(0,1)
     # Invert for Pytorch
     # https://github.com/pytorch/pytorch/blob/9233af181f5459793885ed9ddb1fdddcb543fd44/torch/nn/functional.py#L5059
+    #mask = torch.triu(torch.ones(seq_len, seq_len)>0,0).transpose(0,1)
+    # This seq length will already be corrected for forecasting.
+    mask = torch.triu(torch.ones(seq_len, seq_len)>0,0).transpose(0,1)
+    mask = (mask.float().masked_fill(mask==0,float("-inf")).masked_fill(mask==1, float(0.0)))
     #lengths = torch.arange(1, N+1)
     #indices = torch.arange(self._max_len, device=self._device)
     #mask = indices.view(1, -1) < lengths.view(-1, 1)
@@ -226,7 +242,7 @@ def collate_forecast(data, max_len=None):
             - y: torch tensor of shape (num_labels,) : class indices or numerical targets
                 (for classification or regression, respectively). num_labels > 1 for multi-task models
         max_len: global fixed sequence length. Used for architectures requiring fixed length input,
-            where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s
+            where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s. For the Brussels dataset, this will be set in the data class. It will also have to be reduced depending on what horizon of forecasting is required.
     Returns:
         X: (batch_size, padded_length, feat_dim) torch tensor of masked features (input)
         targets: (batch_size, padded_length, feat_dim) torch tensor of unmasked features (output)
