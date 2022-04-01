@@ -337,3 +337,85 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         output = self.output_layer(output)  # (batch_size, num_classes)
 
         return output
+
+
+class TSTransformerEncoderForecast(nn.Module):
+    """
+    Transformer for forecasting. The reason there is a separate transformer for 
+    forecasting is that the final dimensionality is different. We need a prediction for every time point in 
+    the sequence, instead of 1 output.
+
+    Concatenates final layer embeddings and uses 0s to ignore padding embeddings in final output layer.
+
+    This class will be fore finetuning regression, classification, or forecasting.
+    """
+
+    def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False):
+        super(TSTransformerEncoderClassiregressor, self).__init__()
+
+        self.max_len = max_len
+        self.d_model = d_model
+        self.n_heads = n_heads
+
+        self.project_inp = nn.Linear(feat_dim, d_model)
+        self.pos_enc = get_pos_encoder(pos_encoding)(d_model, dropout=dropout*(1.0 - freeze), max_len=max_len)
+
+        if norm == 'LayerNorm':
+            encoder_layer = TransformerEncoderLayer(d_model, self.n_heads, dim_feedforward, dropout*(1.0 - freeze), activation=activation)
+        else:
+            encoder_layer = TransformerBatchNormEncoderLayer(d_model, self.n_heads, dim_feedforward, dropout*(1.0 - freeze), activation=activation)
+
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers)
+
+        self.act = _get_activation_fn(activation)
+
+        self.dropout1 = nn.Dropout(dropout)
+
+        self.feat_dim = feat_dim
+        self.num_classes = num_classes
+        self.output_layer = self.build_output_module(d_model, max_len, num_classes)
+
+    def build_output_module(self, d_model, max_len, num_classes):
+        output_layer = nn.Linear(d_model * max_len, num_classes)
+        # no softmax (or log softmax), because CrossEntropyLoss does this internally. If probabilities are needed,
+        # add F.log_softmax and use NLLoss
+        return output_layer
+
+    def forward(self, X, padding_masks, src_masks: Optional[Tensor] = None):
+        """
+        Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
+        TSTransformerEncoder, is for imputation. See the model factory at the beginning of this script.
+
+        Args:
+            X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
+            padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
+            src_masks: (L, S) L is the target sequence length, and S is the source sequence length. 
+                    boolean tensor, 1 means keep vector at this position, 0 means padding
+                    See https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+        Returns:
+            output: (batch_size, num_classes)
+        """
+
+        # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
+        logging.info("src in ts transformer encoder")
+        logging.info(X.shape)
+        logging.info(X)
+        inp = X.permute(1, 0, 2)
+        inp = self.project_inp(inp) * math.sqrt(
+            self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
+        inp = self.pos_enc(inp)  # add positional encoding
+        # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
+        output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
+        logging.info("output from ts")
+        logging.info(output)
+        output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
+        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
+        output = self.dropout1(output)
+
+        # Output
+        output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
+        output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
+        output = self.output_layer(output)  # (batch_size, num_classes)
+
+        return output
