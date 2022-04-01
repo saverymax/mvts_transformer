@@ -2,9 +2,11 @@
 #PBS -N beijing_pretrain
 #PBS -o  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
 #PBS -e  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
-#PBS -l walltime=00:10:00 
-#PBS -l nodes=1:ppn=9:gpus=1:skylake 
-#PBS -l partition=gpu 
+#PBS -l walltime=00:05:00 
+##PBS -l nodes=1:ppn=9:gpus=1:skylake 
+##PBS -l partition=gpu 
+#PBS -l nodes=1:ppn=36
+#PBS - qos=debugging
 #PBS -l pmem=5gb 
 #PBS -A default_project
 source $VSC_DATA/miniconda3/bin/activate mvts
