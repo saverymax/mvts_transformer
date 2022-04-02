@@ -184,7 +184,7 @@ def main(config):
 
     if config['test_only'] == 'testset':  # Only evaluate and skip training
         dataset_class, collate_fn, runner_class = pipeline_factory(config)
-        test_dataset = dataset_class(test_data, test_indices, config)
+        test_dataset = dataset_class(test_data, test_indices)
 
         test_loader = DataLoader(dataset=test_dataset,
                                  batch_size=config['batch_size'],
@@ -206,7 +206,7 @@ def main(config):
     # Collate_fn will return 
     # X, targets, target_masks and/or padding_masks, ids used by trainer
     dataset_class, collate_fn, runner_class = pipeline_factory(config)
-    val_dataset = dataset_class(val_data, val_indices, config)
+    val_dataset = dataset_class(val_data, val_indices)
 
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=config['batch_size'],
@@ -215,7 +215,7 @@ def main(config):
                             pin_memory=True,
                             collate_fn=lambda x: collate_fn(x, max_len=model.max_len))
 
-    train_dataset = dataset_class(my_data, train_indices, config)
+    train_dataset = dataset_class(my_data, train_indices)
 
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=config['batch_size'],
