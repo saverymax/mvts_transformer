@@ -168,6 +168,8 @@ class ForecastDataset(Dataset):
         self.data = data  # this is a subclass of the BaseData class in data.py
         self.IDs = indices  # list of data IDs, but also mapping between integer index and ID
         self.feature_df = self.data.feature_df.loc[self.IDs]
+        # TODO: Add horizon as option
+        self.h = 1
 
         self.labels_df = self.data.labels_df.loc[self.IDs]
 
@@ -186,13 +188,13 @@ class ForecastDataset(Dataset):
         logging.info("get item shape:")
         logging.info(X.shape)
         # Remove last sequence element
-        X = X[:-1, :]  
+        X = X[:-self.h, :]  
         logging.info(X.shape)
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
         # Remove the first label
         logging.info("y shape")
         logging.info(y.shape)
-        y = y[1:]
+        y = y[self.h:]
         logging.info(y.shape)
         
         logging.info("labels in forecast dataset")
@@ -203,7 +205,7 @@ class ForecastDataset(Dataset):
         return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
     def __len__(self):
-        return len(self.IDs) - 1
+        return len(self.IDs) - self.h
 
 
 def collate_forecast(data, max_len=None):
@@ -215,7 +217,10 @@ def collate_forecast(data, max_len=None):
             - X: torch tensor of shape (seq_length, feat_dim); variable seq_length.
             - y: torch tensor of shape (num_labels,) : numerical targets
         max_len: global fixed sequence length. Used for architectures requiring fixed length input,
-            where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s. For the Brussels dataset, this will be set in the data class. It will also have to be reduced depending on what horizon of forecasting is required.
+            where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s. For the Brussels dataset, this will be set in the data class. It will also have to be reduced depending on what horizon of forecasting is required. 
+
+        max_len is set in model_factory, where it uses data.max_seq_len. This is passed to collate in main.py.
+
     Returns:
         X: (batch_size, padded_length, feat_dim) torch tensor of masked features (input)
         targets: (batch_size, padded_length, feat_dim) torch tensor of unmasked features (output)
@@ -225,6 +230,8 @@ def collate_forecast(data, max_len=None):
     """
     batch_size = len(data)
     features, labels, IDs = zip(*data)
+    logging.info("max len in collate")
+    logging.info(max_len)
 
     # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
     lengths = [X.shape[0] for X in features]  # original sequence length for each time series
@@ -232,9 +239,9 @@ def collate_forecast(data, max_len=None):
         max_len = max(lengths)
     X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
 
-    end = max_len
-    # Don't really need this end part if I know all sequence lenths will be the same.
+    # Convert from 2D to 3D tensors.
     for i in range(batch_size):
+        end = min(lengths[i], max_len)
         X[i, :end, :] = features[i][:end, :]
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
