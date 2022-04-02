@@ -46,7 +46,7 @@ def pipeline_factory(config):
     if (task == "classification") or (task == "regression"):
         return ClassiregressionDataset, collate_superv, SupervisedRunner
     if task == "forecast":
-        return ForecastDataset, collate_forecast, ForecastRunner
+        return partial(ForecastDataset, horizon=config['horizon']), collate_forecast, ForecastRunner
     else:
         raise NotImplementedError("Task '{}' not implemented".format(task))
 
