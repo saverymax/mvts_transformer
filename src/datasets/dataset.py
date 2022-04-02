@@ -151,6 +151,8 @@ class ClassiregressionDataset(Dataset):
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
+        logging.info("y shape")
+        logging.info(y.shape)
 
         return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
@@ -196,40 +198,12 @@ class ForecastDataset(Dataset):
         logging.info("labels in forecast dataset")
         logging.info(y) 
         logging.info(y.shape)
-        mask = forecast_mask(X) 
-        #logging.info("forecast mask")
-        #logging.info(mask.shape)
-        #logging.info(mask)
         # TODO: self.IDS will be weird now that I have changed the forecast.:
 
-        return torch.from_numpy(X), torch.from_numpy(y), mask, self.IDs[ind]
+        return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
     def __len__(self):
         return len(self.IDs) - 1
-
-
-def forecast_mask(X):
-    """
-    Creates boolean mask of the same shape as k, with 1s where features should be masked, for autoregressive forecasting.
-    See https://github.com/idiap/fast-transformers/blob/2fe048a14c2e67787f553e899123ca4ba9f27e76/fast_transformers/masking.py#L204
-    Args:
-        X: (seq_length, feat_dim) numpy array of features corresponding to a single sample
-
-    Returns: 
-        boolean numpy array of dimension (max_len, max_len), with True at places where a feature should be masked
-    """
-    seq_len = X.shape[0] 
-    #mask = ~torch.triu(torch.ones(seq_len, seq_len)>0,1).transpose(0,1)
-    # Invert for Pytorch
-    # https://github.com/pytorch/pytorch/blob/9233af181f5459793885ed9ddb1fdddcb543fd44/torch/nn/functional.py#L5059
-    #mask = torch.triu(torch.ones(seq_len, seq_len)>0,0).transpose(0,1)
-    # This seq length will already be corrected for forecasting.
-    mask = torch.triu(torch.ones(seq_len, seq_len)>0,0).transpose(0,1)
-    mask = (mask.float().masked_fill(mask==0,float("-inf")).masked_fill(mask==1, float(0.0)))
-    #lengths = torch.arange(1, N+1)
-    #indices = torch.arange(self._max_len, device=self._device)
-    #mask = indices.view(1, -1) < lengths.view(-1, 1)
-    return mask
 
 
 def collate_forecast(data, max_len=None):
@@ -239,8 +213,7 @@ def collate_forecast(data, max_len=None):
     Args:
         data: len(batch_size) list of tuples (X, y).
             - X: torch tensor of shape (seq_length, feat_dim); variable seq_length.
-            - y: torch tensor of shape (num_labels,) : class indices or numerical targets
-                (for classification or regression, respectively). num_labels > 1 for multi-task models
+            - y: torch tensor of shape (num_labels,) : numerical targets
         max_len: global fixed sequence length. Used for architectures requiring fixed length input,
             where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s. For the Brussels dataset, this will be set in the data class. It will also have to be reduced depending on what horizon of forecasting is required.
     Returns:
@@ -250,8 +223,6 @@ def collate_forecast(data, max_len=None):
             0 indicates masked values to be predicted, 1 indicates unaffected/"active" feature values
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
-    #TODO: Update this documentation
-
     batch_size = len(data)
     features, labels, masks, IDs = zip(*data)
 
@@ -260,26 +231,19 @@ def collate_forecast(data, max_len=None):
     if max_len is None:
         max_len = max(lengths)
     X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
-    target_masks = torch.zeros_like(torch.ones(X.shape[0], max_len, max_len),
-                                    dtype=torch.bool)  # (batch_size, max len , max_len) masks related to objective
-    #logging.info("other collate masks")
-    #logging.info(masks)
+
     end = max_len
     # Don't really need this end part if I know all sequence lenths will be the same.
     for i in range(batch_size):
         X[i, :end, :] = features[i][:end, :]
-        # Add batch dimension to masks
-        target_masks[i, :end, :] = masks[i][:end, :]
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
-    #logging.info("collate targets shape")
-    #logging.info(targets.shape)
+    logging.info("collate targets shape")
+    logging.info(targets.shape)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len) # (batch_size, padded_length) boolean tensor, "1" means keep
 
-    return X, targets, target_masks, padding_masks, IDs
-
-
+    return X, targets, padding_masks, IDs
 
 
 def transduct_mask(X, mask_feats, start_hint=0.0, end_hint=0.0):
