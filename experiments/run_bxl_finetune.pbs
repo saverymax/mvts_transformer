@@ -12,4 +12,4 @@
 ##model=$VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth 
 ## --load_model ${model}
 source $VSC_DATA/miniconda3/bin/activate mvts
-python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "BXL forecast finetuning" --name BXL_debug_finetuned --records_file Forecast_records.xls --data_dir $VSC_DATA/thesis/data/brussels_data/ --data_class bxl --pattern TRAIN --val_pattern TEST --epochs 1 --lr 0.001 --optimizer RAdam --pos_encoding learnable --d_model 128 --task forecast --change_output --batch_size 32 --seed 13
+python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "BXL forecast finetuning" --name BXL_debug_finetuned --records_file Forecast_records.xls --data_dir $VSC_DATA/thesis/data/brussels_data/ --data_class bxl --pattern TRAIN --val_pattern TEST --epochs 1 --lr 0.001 --optimizer RAdam --pos_encoding learnable --d_model 128 --task forecast --change_output --batch_size 32 --seed 13 --horizon 10
