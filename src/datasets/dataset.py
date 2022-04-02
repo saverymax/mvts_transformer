@@ -224,7 +224,7 @@ def collate_forecast(data, max_len=None):
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
     batch_size = len(data)
-    features, labels, masks, IDs = zip(*data)
+    features, labels, IDs = zip(*data)
 
     # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
     lengths = [X.shape[0] for X in features]  # original sequence length for each time series
