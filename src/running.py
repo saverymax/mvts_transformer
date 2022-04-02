@@ -289,11 +289,9 @@ class ForecastRunner(BaseRunner):
         total_samples = 0  # total samples in epoch
 
         for i, batch in enumerate(self.dataloader):
-
             # Batch will be the 
-            X, targets, target_masks, padding_masks, IDs = batch
+            X, targets, padding_masks, IDs = batch
             targets = targets.to(self.device)
-            target_masks = target_masks.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             # One of the main differences between this loop and the regression/
@@ -301,7 +299,8 @@ class ForecastRunner(BaseRunner):
             # The training proceeds in the same way as the supervised methods after this.
             # Note that the target masks are the last argument because the target_masks must be left as optional. 
             # This is because there are no masks of targets in reg/classification.
-            predictions = self.model(X.to(self.device), padding_masks, target_masks[0])
+            # TODO: Change this implementaiton to generate forecast masks in the model
+            predictions = self.model(X.to(self.device), padding_masks)
         
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
@@ -347,10 +346,9 @@ class ForecastRunner(BaseRunner):
 
             X, targets, target_masks, padding_masks, IDs = batch
             targets = targets.to(self.device)
-            target_masks = target_masks.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
-            predictions = self.model(X.to(self.device), padding_masks, target_masks[0])
+            predictions = self.model(X.to(self.device), padding_masks)
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss).cpu().item()
@@ -581,6 +579,9 @@ class SupervisedRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
+            logging.info("Logging target/preds shape")
+            logging.info(predictions.shape)
+            logging.info(targets.shape)
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)
