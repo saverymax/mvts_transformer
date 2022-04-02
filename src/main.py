@@ -47,9 +47,9 @@ def main(config):
     logger.addHandler(file_handler)
 
     logger.info('Running:\n{}\n'.format(' '.join(sys.argv)))  # command used to run
-
-    if config['seed'] is not None:
-        torch.manual_seed(config['seed'])
+    
+    # Set seed to argument provided in CLI. By default it is 13.
+    torch.manual_seed(config['seed'])
 
     device = torch.device('cuda' if (torch.cuda.is_available() and config['gpu'] != '-1') else 'cpu')
     logger.info("Using device: {}".format(device))
@@ -97,7 +97,7 @@ def main(config):
                                                                  validation_ratio=config['val_ratio'],
                                                                  test_set_ratio=config['test_ratio'],  # used only if test_indices not explicitly specified
                                                                  test_indices=test_indices,
-                                                                 random_seed=1337,
+                                                                 random_seed=config['seed'],
                                                                  labels=labels)
         train_indices = train_indices[0]  # `split_dataset` returns a list of indices *per fold/split*
         val_indices = val_indices[0]  # `split_dataset` returns a list of indices *per fold/split*
