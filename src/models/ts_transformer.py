@@ -273,8 +273,6 @@ class TSTransformerEncoderClassiregressor(nn.Module):
     """
     Simplest classifier/regressor. Can be either regressor or classifier because the output does not include
     softmax. Concatenates final layer embeddings and uses 0s to ignore padding embeddings in final output layer.
-
-    This class will be fore finetuning regression, classification, or forecasting.
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
@@ -309,17 +307,12 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         # add F.log_softmax and use NLLoss
         return output_layer
 
-    def forward(self, X, padding_masks, src_masks: Optional[Tensor] = None):
+    def forward(self, X, padding_masks):
         """
-        Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
-        TSTransformerEncoder, is for imputation. See the model factory at the beginning of this script.
-
         Args:
             X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
             padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
-            src_masks: (L, S) L is the target sequence length, and S is the source sequence length. 
-                    Float tensor, -inf where sequence will be masked and 0 otherwise.
-                    See https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+
         Returns:
             output: (batch_size, num_classes)
         """
@@ -333,7 +326,7 @@ class TSTransformerEncoderClassiregressor(nn.Module):
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
+        output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
         logging.info("output from ts")
         logging.info(output)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
@@ -414,6 +407,8 @@ class TSTransformerEncoderForecast(nn.Module):
         """
         Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
         TSTransformerEncoder, is for imputation. See the model factory at the beginning of this script.
+
+        The src_masks argument is not necessary but is left in if there is an implementation that needs to generate forecast masks in the dataset classes.
 
         Args:
             X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
