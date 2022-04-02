@@ -289,17 +289,10 @@ class ForecastRunner(BaseRunner):
         total_samples = 0  # total samples in epoch
 
         for i, batch in enumerate(self.dataloader):
-            # Batch will be the 
             X, targets, padding_masks, IDs = batch
             targets = targets.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
-            # One of the main differences between this loop and the regression/
-            # classification training loops is that the target masks are passed to the model. 
-            # The training proceeds in the same way as the supervised methods after this.
-            # Note that the target masks are the last argument because the target_masks must be left as optional. 
-            # This is because there are no masks of targets in reg/classification.
-            # TODO: Change this implementaiton to generate forecast masks in the model
             predictions = self.model(X.to(self.device), padding_masks)
         
 
@@ -344,7 +337,7 @@ class ForecastRunner(BaseRunner):
         per_batch = {'target_masks': [], 'targets': [], 'predictions': [], 'metrics': [], 'IDs': []}
         for i, batch in enumerate(self.dataloader):
 
-            X, targets, target_masks, padding_masks, IDs = batch
+            X, targets, padding_masks, IDs = batch
             targets = targets.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
