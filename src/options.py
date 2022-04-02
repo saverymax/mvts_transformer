@@ -139,6 +139,8 @@ class Options(object):
         # Model
         self.parser.add_argument('--model', choices={"transformer", "LINEAR"}, default="transformer",
                                  help="Model class")
+        self.parser.add_argument('--horizon', type=int, 
+                                 help="""Horizon to use for forecastin, i.e., 1-step ahead, 2-step, or more.""")
         self.parser.add_argument('--max_seq_len', type=int,
                                  help="""Maximum input sequence length. Determines size of transformer layers.
                                  If not provided, then the value defined inside the data class will be used.""")
