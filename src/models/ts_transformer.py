@@ -318,7 +318,7 @@ class TSTransformerEncoderClassiregressor(nn.Module):
             X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
             padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
             src_masks: (L, S) L is the target sequence length, and S is the source sequence length. 
-                    boolean tensor, 1 means keep vector at this position, 0 means padding
+                    Float tensor, -inf where sequence will be masked and 0 otherwise.
                     See https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
         Returns:
             output: (batch_size, num_classes)
@@ -392,6 +392,24 @@ class TSTransformerEncoderForecast(nn.Module):
         # add F.log_softmax and use NLLoss
         return output_layer
 
+    def generate_forecast_mask(self, device):
+        """
+        Creates Float mask, for autoregressive forecasting.
+        See https://github.com/idiap/fast-transformers/blob/2fe048a14c2e67787f553e899123ca4ba9f27e76/fast_transformers/masking.py#L204
+        Args: 
+            device: Computing device taken from input
+
+        Returns: 
+            Float tensor of dimension (max_len, max_len), with -inf at places where a time point should be masked
+        """
+        # Possible to use Byte, Bool, or Float tensor. Here a Float tensor is used,
+        # which is added to attention.
+        # This seq length will already be corrected for forecasting.
+        mask = torch.triu(torch.ones(self.max_len, self.max_len)>0,0).transpose(0,1)
+        mask = (mask.float().masked_fill(mask==0,float("-inf")).masked_fill(mask==1, float(0.0)))
+
+        return mask.to(device)
+
     def forward(self, X, padding_masks, src_masks: Optional[Tensor] = None):
         """
         Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
@@ -415,6 +433,7 @@ class TSTransformerEncoderForecast(nn.Module):
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
+        src_masks = self.generate_forecast_mask(inp.device) 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
         logging.info("output from ts")
@@ -427,5 +446,7 @@ class TSTransformerEncoderForecast(nn.Module):
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
         output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
         output = self.output_layer(output)  # (batch_size, num_classes)
+        # For comparing to targets
+        output = output.unsqueeze(-1) # (batch_size, num_classes, 1)
 
         return output
