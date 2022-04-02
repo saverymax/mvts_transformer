@@ -119,6 +119,8 @@ class BxlData(BaseData):
         Initiate class for air pollution following structure of TSRegression class
         """
         self.config = config
+        self.h = self.config['horizon']
+        assert self.h is not None, "A horizon value must be provided in input arguments"
 
         df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
         df.sort_values(by=["station", "time"], ascending=[True, True], inplace=True)
@@ -145,6 +147,7 @@ class BxlData(BaseData):
         print(self.all_IDs)
         logging.info(type(self.all_IDs))
 
+        # TODO: what dis?
         if limit_size is not None:
             if limit_size > 1:
                 limit_size = int(limit_size)
@@ -160,8 +163,9 @@ class BxlData(BaseData):
         assert series_len == 458
         logging.info("series length")
         logging.info(series_len)
-        # For forecasting with our set horizon, we will have to decrease this
-        self.max_seq_len = series_len - 1
+        # For forecasting with our set horizon, we have to decrease the max length to use in the model
+        assert self.h < series_len, "Horizon must be at least 1 less than the length of the time series"
+        self.max_seq_len = series_len - self.h
 
 
 class HDD_data(BaseData):

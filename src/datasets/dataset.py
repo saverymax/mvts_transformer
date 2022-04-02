@@ -162,14 +162,13 @@ class ClassiregressionDataset(Dataset):
 
 class ForecastDataset(Dataset):
 
-    def __init__(self, data, indices):
+    def __init__(self, data, indices, config):
         super(ForecastDataset, self).__init__()
 
         self.data = data  # this is a subclass of the BaseData class in data.py
         self.IDs = indices  # list of data IDs, but also mapping between integer index and ID
         self.feature_df = self.data.feature_df.loc[self.IDs]
-        # TODO: Add horizon as option
-        self.h = 1
+        self.h = config['horizon']
 
         self.labels_df = self.data.labels_df.loc[self.IDs]
 
@@ -219,13 +218,11 @@ def collate_forecast(data, max_len=None):
         max_len: global fixed sequence length. Used for architectures requiring fixed length input,
             where the batch length cannot vary dynamically. Longer sequences are clipped, shorter are padded with 0s. For the Brussels dataset, this will be set in the data class. It will also have to be reduced depending on what horizon of forecasting is required. 
 
-        max_len is set in model_factory, where it uses data.max_seq_len. This is passed to collate in main.py.
+        max_len is set in model_factory, where it uses max_seq_len = data.max_seq_len. This is passed to collate in main.py
 
     Returns:
         X: (batch_size, padded_length, feat_dim) torch tensor of masked features (input)
         targets: (batch_size, padded_length, feat_dim) torch tensor of unmasked features (output)
-        target_masks: (batch_size, padded_length, feat_dim) boolean torch tensor
-            0 indicates masked values to be predicted, 1 indicates unaffected/"active" feature values
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
     batch_size = len(data)
