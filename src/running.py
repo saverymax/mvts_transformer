@@ -21,6 +21,7 @@ from utils import utils, analysis
 from models.loss import l2_reg_loss
 from datasets.dataset import ImputationDataset, TransductionDataset, ClassiregressionDataset, ForecastDataset, collate_unsuperv, collate_superv, collate_forecast
 
+import wandb
 
 logger = logging.getLogger('__main__')
 
@@ -384,18 +385,12 @@ class UnsupervisedRunner(BaseRunner):
             targets = targets.to(self.device)
             target_masks = target_masks.to(self.device)  # 1s: mask and predict, 0s: unaffected input (ignore)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
-            logging.info("target and padding masks during pretraining")
-            logging.info(target_masks.shape)
-            #logging.info(padding_masks.shape)
-            logging.info(target_masks)
-            #logging.info("padding mask print")
-            #logging.info(padding_masks)
-
-            # 
             predictions = self.model(X.to(self.device), padding_masks)  # (batch_size, padded_length, feat_dim)
 
-            # TODO: Why cascade the masks? It might not matter for my forecasting stuffs.
             # Cascade noise masks (batch_size, padded_length, feat_dim) and padding masks (batch_size, padded_length)
+            # Masks are cascaed so we don't compute loss for elements that are  either 
+            # noise masked or padding masked.
+            # Notice that it is only these target masks that are passed to loss.
             target_masks = target_masks * padding_masks.unsqueeze(-1)
             logging.info("cascaded masks")
             logging.info(target_masks.shape)
@@ -554,6 +549,10 @@ class SupervisedRunner(BaseRunner):
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
+
+        # Wandb logging
+        #wandb.log({"loss": epoch_loss})
+
         return self.epoch_metrics
 
     def evaluate(self, epoch_num=None, keep_all=True):
