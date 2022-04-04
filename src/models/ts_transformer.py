@@ -442,22 +442,15 @@ class TSTransformerEncoderForecast(nn.Module):
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
-
         # Output
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
         logging.info("output after padding masks")
         logging.info(output.shape)
         logging.info(output)
-        #output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
-        # logging.info("output after reshape")
-        # logging.info(output.shape)
-        # logging.info(output)
         # Size of output weights is seq_len * dim, num classes
         output = self.output_layer(output)  # (batch_size, seq_len, num_classes=1)
         logging.info("output after final layer")
         logging.info(output.shape)
         logging.info(output)
-        # For comparing to targets
-        #output = output.unsqueeze(-1) # (batch_size, seq_len, 1)
 
         return output
