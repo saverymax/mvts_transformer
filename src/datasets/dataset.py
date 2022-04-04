@@ -327,15 +327,20 @@ def collate_unsuperv(data, max_len=None, mask_compensation=False):
 
     # Notice that here the targets are X.
     targets = X.clone()
+    logging.info("x before mask")
+    logging.info(X)
+    # Targets are masked here and not in model
+    # However, padding mask is added in model.
     X = X * target_masks  # mask input
+    logging.info("X after")
+    logging.info(X)
     if mask_compensation:
         X = compensate_masking(X, target_masks)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len)  # (batch_size, padded_length) boolean tensor, "1" means keep
     target_masks = ~target_masks  # inverse logic: 0 now means ignore, 1 means predict
-    logging.info("target masks from collate")
-    logging.info(target_masks.shape)
-    logging.info(target_masks)
+    logging.info("padding masks from collate")
+    logging.info(padding_masks)
 
     return X, targets, target_masks, padding_masks, IDs
 
