@@ -51,10 +51,11 @@ def model_factory(config, data):
                                                         activation=config['activation'],
                                                         norm=config['normalization_layer'], freeze=config['freeze'])
     if (task == "forecast"):
+        num_labels = data.labels_df.shape[1]
         return TSTransformerEncoderForecast(feat_dim, max_seq_len, config['d_model'],
                                                 config['num_heads'],
                                                 config['num_layers'], config['dim_feedforward'],
-                                                num_classes=max_seq_len,
+                                                num_classes=num_labels,
                                                 dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                 activation=config['activation'],
                                                 norm=config['normalization_layer'], freeze=config['freeze'])
@@ -375,12 +376,17 @@ class TSTransformerEncoderForecast(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
 
         self.feat_dim = feat_dim
-        # Num classes will be the length of the sequence.
+        # Num classes will be 1 for forecasting (1 continuous value at each time point)
         self.num_classes = num_classes
-        self.output_layer = self.build_output_module(d_model, max_len, num_classes)
+        self.output_layer = self.build_output_module(d_model, num_classes)
 
-    def build_output_module(self, d_model, max_len, num_classes):
-        output_layer = nn.Linear(d_model * max_len, num_classes)
+    def build_output_module(self, d_model, num_classes):
+        """
+        The number of input features for the linear layer will be the dimension of the model,
+        so that it is applied independently to each element of the sequence. This differs from 
+        the regress/classi implementation, where the hidden dim and seq_len are merged into one row.
+        """
+        output_layer = nn.Linear(d_model, num_classes)
         # no softmax (or log softmax), because CrossEntropyLoss does this internally. If probabilities are needed,
         # add F.log_softmax and use NLLoss
         return output_layer
@@ -405,8 +411,8 @@ class TSTransformerEncoderForecast(nn.Module):
 
     def forward(self, X, padding_masks, src_masks: Optional[Tensor] = None):
         """
-        Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. The other transformer class,
-        TSTransformerEncoder, is for imputation. See the model factory at the beginning of this script.
+        Note that for forecasting, this is the transformer layer that needs to have been modified to accomadate src_masks. 
+        For coding of model call in config, see the model factory at the beginning of this script.
 
         The src_masks argument is not necessary but is left in if there is an implementation that needs to generate forecast masks in the dataset classes.
 
@@ -439,9 +445,19 @@ class TSTransformerEncoderForecast(nn.Module):
 
         # Output
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
-        output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
-        output = self.output_layer(output)  # (batch_size, num_classes)
+        logging.info("output after padding masks")
+        logging.info(output.shape)
+        logging.info(output)
+        #output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
+        # logging.info("output after reshape")
+        # logging.info(output.shape)
+        # logging.info(output)
+        # Size of output weights is seq_len * dim, num classes
+        output = self.output_layer(output)  # (batch_size, seq_len, num_classes=1)
+        logging.info("output after final layer")
+        logging.info(output.shape)
+        logging.info(output)
         # For comparing to targets
-        output = output.unsqueeze(-1) # (batch_size, num_classes, 1)
+        #output = output.unsqueeze(-1) # (batch_size, seq_len, 1)
 
         return output
