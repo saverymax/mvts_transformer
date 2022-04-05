@@ -34,8 +34,27 @@ from models.ts_transformer import model_factory
 from models.loss import get_loss_module
 from optimizers import get_optimizer
 
+import wandb
+
 
 def main(config):
+
+    wandb_config = dict(
+        data_class=config['data_class'],
+        learning_rate=config['lr'],
+        d_model=config['d_model'],
+        max_len=config['max_seq_len']
+        task=config['task'],
+    )
+
+    # mix is my wandb username
+    wandb.init(
+        project="mvts-forecasting",
+        entity="mix",
+        notes=config['comment'],
+        tags=["forecasting", 'transformer'],
+        config=wandb_config,
+    ) 
 
     total_epoch_time = 0
     total_eval_time = 0
