@@ -4,7 +4,7 @@ Module for testing the forecasting transformer layer.
 Some ideas from: https://github.com/suriyadeepan/torchtest/blob/master/torchtest/torchtest.py
 """
 
-from models.ts_transformer import TSTransformerEncoderForecast, build_output_layer
+from models.ts_transformer import TSTransformerEncoderForecast, build_output_layer, generate_forecast_mask
 from models.loss import get_loss_module
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def generate_forecast_data(batch_size, seq_len, h_dim):
 
     return X
 
-    
+
 def assert_uses_gpu():
     """
     Make sure GPU is available and accessible
@@ -45,3 +45,13 @@ def test_output_layer()
 
 def test_never_nan():
     assert not torch.isnan(tensor).byte().any()
+
+
+def test_forecast_mask():
+    """
+    Mask should be True only for values above diagonal
+    """
+    mask = get_forecast_mask(seq_len)
+    assert mask.shape == (seq_len)
+    for i in 1:seq_len:
+        assert sum(mask[i,]) == i
