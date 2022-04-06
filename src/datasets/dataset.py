@@ -194,12 +194,10 @@ class ForecastDataset(Dataset):
         #logging.info("y shape")
         #logging.info(y.shape)
         y = y[self.h:]
-        logging.info("all ids in forecast dataset")
-        logging.info(self.IDS)
-        logging.info("selected ind in forecast dataset")
-        logging.info(ind)
-        ids = self.IDs[ind][:-self.h]
-        assert len(y) == len(ids)
+        #logging.info("all ids in forecast dataset")
+        #logging.info(self.IDs)
+        #logging.info("selected ind in forecast dataset")
+        #logging.info(ind)
         #logging.info(y.shape)
         logging.info("ids in forecast dataset after change")
         logging.info(ids)
@@ -208,7 +206,7 @@ class ForecastDataset(Dataset):
         #logging.info(y) 
         #logging.info(y.shape)
 
-        return torch.from_numpy(X), torch.from_numpy(y), ids
+        return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
     def __len__(self):
         return len(self.IDs) - self.h

@@ -134,6 +134,7 @@ class BxlData(BaseData):
         #df['numeric_index'] = index_n
         #df.set_index(keys="numeric_index", inplace=True)
         self.all_df = df[["pm25", "pm10","no2","covid", "traffic_vol"]]
+        # ID for each sample, where each sample is a time series.
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         # chem will be pollutant to predict
         # For pretraining imputation I don't need labels I think
