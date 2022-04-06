@@ -190,9 +190,9 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
         Shape:
             see the docs in Transformer class.
         """
-        logging.info("src in batch encoder layer")
-        logging.info(src.shape)
-        logging.info(src)
+        #logging.info("src in batch encoder layer")
+        #logging.info(src.shape)
+        #logging.info(src)
         #logging.info("src mask")
         ##logging.info(src_mask.shape)
         #logging.info(src_mask)
@@ -201,8 +201,8 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
         #logging.info(src_key_padding_mask.shape)
         src2 = self.self_attn(src, src, src, attn_mask=src_mask,
                               key_padding_mask=src_key_padding_mask)[0]
-        logging.info("src2 after attention")
-        logging.info(src2)
+        #logging.info("src2 after attention")
+        #logging.info(src2)
         src = src + self.dropout1(src2)  # (seq_len, batch_size, d_model)
         src = src.permute(1, 2, 0)  # (batch_size, d_model, seq_len)
         # src = src.reshape([src.shape[0], -1])  # (batch_size, seq_length * d_model)
@@ -319,17 +319,17 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         """
 
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
-        logging.info("src in ts transformer encoder")
-        logging.info(X.shape)
-        logging.info(X)
+        #logging.info("src in ts transformer encoder")
+        #logging.info(X.shape)
+        #logging.info(X)
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
-        logging.info("output from ts")
-        logging.info(output)
+        #logging.info("output from ts")
+        #logging.info(output)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
@@ -427,9 +427,9 @@ class TSTransformerEncoderForecast(nn.Module):
         """
 
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
-        logging.info("src in ts transformer encoder")
-        logging.info(X.shape)
-        logging.info(X)
+        #logging.info("src in ts transformer encoder")
+        #logging.info(X.shape)
+        #logging.info(X)
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
@@ -437,20 +437,20 @@ class TSTransformerEncoderForecast(nn.Module):
         src_masks = self.generate_forecast_mask(inp.device) 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
-        logging.info("output from ts")
-        logging.info(output)
+        #logging.info("output from ts")
+        #logging.info(output)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
         # Output
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
-        logging.info("output after padding masks")
-        logging.info(output.shape)
-        logging.info(output)
+        #logging.info("output after padding masks")
+        #logging.info(output.shape)
+        #logging.info(output)
         # Size of output weights is seq_len * dim, num classes
         output = self.output_layer(output)  # (batch_size, seq_len, num_classes=1)
-        logging.info("output after final layer")
-        logging.info(output.shape)
-        logging.info(output)
+        #logging.info("output after final layer")
+        #logging.info(output.shape)
+        #logging.info(output)
 
         return output
