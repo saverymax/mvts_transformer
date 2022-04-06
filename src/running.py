@@ -392,9 +392,9 @@ class UnsupervisedRunner(BaseRunner):
             # noise masked or padding masked.
             # Notice that it is only these target masks that are passed to loss.
             target_masks = target_masks * padding_masks.unsqueeze(-1)
-            logging.info("cascaded masks")
-            logging.info(target_masks.shape)
-            logging.info(target_masks)
+            #logging.info("cascaded masks")
+            #logging.info(target_masks.shape)
+            #logging.info(target_masks)
             # From the paper:
             # Predictions are made on full sequences.
             # but only the predictions on the masked values are considered in the Mean Squared Error loss
@@ -514,11 +514,11 @@ class SupervisedRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
-            logging.info("Loss eval")
-            logging.info("targets")
-            logging.info(targets.shape)
-            logging.info("preds")
-            logging.info(predictions.shape)
+            #logging.info("Loss eval")
+            #logging.info("targets")
+            #logging.info(targets.shape)
+            #logging.info("preds")
+            #logging.info(predictions.shape)
             
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
@@ -571,9 +571,9 @@ class SupervisedRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
-            logging.info("Logging target/preds shape")
-            logging.info(predictions.shape)
-            logging.info(targets.shape)
+            #logging.info("Logging target/preds shape")
+            #logging.info(predictions.shape)
+            #logging.info(targets.shape)
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)

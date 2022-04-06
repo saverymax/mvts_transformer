@@ -89,6 +89,9 @@ class Options(object):
                                        "                          transduction of features to other features,\n"
                                        "                          classification of entire time series,\n"
                                        "                          regression of scalar(s) for entire time series"))
+        self.parser.add_argument('--pollutant', choices={None, 'no2', 'pm10', 'pm25'},
+                                 default=None,
+                                 help="Pollutant for forecasting if using Brussels dataset. None otherwise")
         self.parser.add_argument('--masking_ratio', type=float, default=0.15,
                                  help='Imputation: mask this proportion of each variable')
         self.parser.add_argument('--mean_mask_length', type=float, default=3,

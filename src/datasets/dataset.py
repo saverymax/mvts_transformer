@@ -36,9 +36,9 @@ class ImputationDataset(Dataset):
         mask = noise_mask(X, self.masking_ratio, self.mean_mask_length, self.mode, self.distribution,
                           self.exclude_feats)  # (seq_length, feat_dim) boolean array
 
-        logging.info("noise mask")
-        logging.info(mask.shape)
-        logging.info(mask)
+        #logging.info("noise mask")
+        #logging.info(mask.shape)
+        #logging.info(mask)
         return torch.from_numpy(X), torch.from_numpy(mask), self.IDs[ind]
 
     def update(self):
@@ -118,8 +118,8 @@ def collate_superv(data, max_len=None):
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
 
-    logging.info("collate targets shape")
-    logging.info(targets.shape)
+    #logging.info("collate targets shape")
+    #logging.info(targets.shape)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16),
                                  max_len=max_len)  # (batch_size, padded_length) boolean tensor, "1" means keep
@@ -184,24 +184,31 @@ class ForecastDataset(Dataset):
         """
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
-        logging.info("get item shape:")
-        logging.info(X.shape)
+        #logging.info("get item shape:")
+        #logging.info(X.shape)
         # Remove last sequence element
         X = X[:-self.h, :]  
-        logging.info(X.shape)
+        #logging.info(X.shape)
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
         # Remove the first label
-        logging.info("y shape")
-        logging.info(y.shape)
+        #logging.info("y shape")
+        #logging.info(y.shape)
         y = y[self.h:]
-        logging.info(y.shape)
+        logging.info("all ids in forecast dataset")
+        logging.info(self.IDS)
+        logging.info("selected ind in forecast dataset")
+        logging.info(ind)
+        ids = self.IDs[ind][:-self.h]
+        assert len(y) == len(ids)
+        #logging.info(y.shape)
+        logging.info("ids in forecast dataset after change")
+        logging.info(ids)
         
-        logging.info("labels in forecast dataset")
-        logging.info(y) 
-        logging.info(y.shape)
-        # TODO: self.IDS will be weird now that I have changed the forecast.:
+        #logging.info("labels in forecast dataset")
+        #logging.info(y) 
+        #logging.info(y.shape)
 
-        return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
+        return torch.from_numpy(X), torch.from_numpy(y), ids
 
     def __len__(self):
         return len(self.IDs) - self.h
@@ -227,8 +234,8 @@ def collate_forecast(data, max_len=None):
     """
     batch_size = len(data)
     features, labels, IDs = zip(*data)
-    logging.info("max len in collate")
-    logging.info(max_len)
+    #logging.info("max len in collate")
+    #logging.info(max_len)
 
     # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
     lengths = [X.shape[0] for X in features]  # original sequence length for each time series
@@ -242,8 +249,8 @@ def collate_forecast(data, max_len=None):
         X[i, :end, :] = features[i][:end, :]
 
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
-    logging.info("collate targets shape")
-    logging.info(targets.shape)
+    #logging.info("collate targets shape")
+    #logging.info(targets.shape)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len) # (batch_size, padded_length) boolean tensor, "1" means keep
 
@@ -327,20 +334,20 @@ def collate_unsuperv(data, max_len=None, mask_compensation=False):
 
     # Notice that here the targets are X.
     targets = X.clone()
-    logging.info("x before mask")
-    logging.info(X)
+    #logging.info("x before mask")
+    #logging.info(X)
     # Targets are masked here and not in model
     # However, padding mask is added in model.
     X = X * target_masks  # mask input
-    logging.info("X after")
-    logging.info(X)
+    #logging.info("X after")
+    #logging.info(X)
     if mask_compensation:
         X = compensate_masking(X, target_masks)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len)  # (batch_size, padded_length) boolean tensor, "1" means keep
     target_masks = ~target_masks  # inverse logic: 0 now means ignore, 1 means predict
-    logging.info("padding masks from collate")
-    logging.info(padding_masks)
+    #logging.info("padding masks from collate")
+    #logging.info(padding_masks)
 
     return X, targets, target_masks, padding_masks, IDs
 

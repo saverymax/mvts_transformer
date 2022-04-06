@@ -120,6 +120,8 @@ class BxlData(BaseData):
         """
         self.config = config
         self.h = self.config['horizon']
+        self.pollutant = self.config['pollutant']
+        assert self.pollutant is not None, "One of no2, pm10, or pm25 must be provided as a pollutant"
         assert self.h is not None, "A horizon value must be provided in input arguments"
 
         df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
@@ -135,19 +137,17 @@ class BxlData(BaseData):
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
         # chem will be pollutant to predict
         # For pretraining imputation I don't need labels I think
-        # TODO: add in chemical selection
-        self.labels_df = pd.DataFrame(self.all_df["no2"], dtype=np.float32)
+        self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
         #self.labels_df = self.all_df["no2"].to_frame()
 
-        logging.info("printing dataframe")
-        logging.info(self.all_df)
-        logging.info("printing labels")
-        print(self.labels_df)
+        #logging.info("printing dataframe")
+        #logging.info(self.all_df)
+        #logging.info("printing labels")
+        #logging.(self.labels_df)
 
-        print(self.all_IDs)
-        logging.info(type(self.all_IDs))
+        #logging.(self.all_IDs)
+        #logging.info(type(self.all_IDs))
 
-        # TODO: what dis?
         if limit_size is not None:
             if limit_size > 1:
                 limit_size = int(limit_size)
@@ -161,8 +161,8 @@ class BxlData(BaseData):
         self.feature_df = self.all_df
         series_len = df.loc[df.index[0]].shape[0] # Should be 458
         assert series_len == 458
-        logging.info("series length")
-        logging.info(series_len)
+        #logging.info("series length")
+        #logging.info(series_len)
         # For forecasting with our set horizon, we have to decrease the max length to use in the model
         assert self.h < series_len, "Horizon must be at least 1 less than the length of the time series"
         self.max_seq_len = series_len - self.h
@@ -380,20 +380,20 @@ class TSRegressionArchive(BaseData):
 
         self.all_df, self.labels_df = self.load_all(root_dir, file_list=file_list, pattern=pattern)
 
-        logging.info("printing dataframe")
-        logging.info(self.all_df)
-        logging.info(self.all_df.loc[0,:])
-        logging.info("df shape")
-        logging.info(self.all_df.shape)
-        logging.info("Printing labels")
-        logging.info(self.labels_df)
-        logging.info("seq len")
-        logging.info(self.max_seq_len)
+        #logging.info("printing dataframe")
+        #logging.info(self.all_df)
+        #logging.info(self.all_df.loc[0,:])
+        #logging.info("df shape")
+        #logging.info(self.all_df.shape)
+        #logging.info("Printing labels")
+        #logging.info(self.labels_df)
+        #logging.info("seq len")
+        #logging.info(self.max_seq_len)
 
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
-        logging.info("ids")
-        logging.info(self.all_IDs)
-        logging.info(type(self.all_IDs))
+        #logging.info("ids")
+        #logging.info(self.all_IDs)
+        #logging.info(type(self.all_IDs))
 
         if limit_size is not None:
             if limit_size > 1:
@@ -493,10 +493,10 @@ class TSRegressionArchive(BaseData):
 
         # Replace NaN values
         grp = df.groupby(by=df.index)
-        logging.info("df types")
-        logging.info(type(grp))
+        #logging.info("df types")
+        #logging.info(type(grp))
         df = grp.transform(interpolate_missing)
-        logging.info(type(df))
+        #logging.info(type(df))
     
 
         return df, labels_df
