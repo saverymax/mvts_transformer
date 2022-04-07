@@ -13,6 +13,7 @@ def model_factory(config, data):
     feat_dim = data.feature_df.shape[1]  # dimensionality of data features
     # data windowing is used when samples don't have a predefined length or the length is too long
     max_seq_len = config['data_window_len'] if config['data_window_len'] is not None else config['max_seq_len']
+    verbose = config['verbose']
     if max_seq_len is None:
         try:
             max_seq_len = data.max_seq_len
@@ -58,7 +59,7 @@ def model_factory(config, data):
                                                 num_classes=num_labels,
                                                 dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                 activation=config['activation'],
-                                                norm=config['normalization_layer'], freeze=config['freeze'])
+                                                norm=config['normalization_layer'], freeze=config['freeze'], verbose=verbose)
 
     else:
         raise ValueError("Model class for task '{}' does not exist".format(task))
@@ -354,8 +355,10 @@ class TSTransformerEncoderForecast(nn.Module):
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
-                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False):
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=verbose):
         super(TSTransformerEncoderForecast, self).__init__()
+
+        self.verbose = verbose
 
         self.max_len = max_len
         self.d_model = d_model
@@ -427,9 +430,10 @@ class TSTransformerEncoderForecast(nn.Module):
         """
 
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
-        #logging.info("src in ts transformer encoder")
-        #logging.info(X.shape)
-        #logging.info(X)
+        if self.verbose:
+            logging.info("src in ts transformer encoder")
+            logging.info(X.shape)
+            logging.info(X)
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
@@ -437,20 +441,23 @@ class TSTransformerEncoderForecast(nn.Module):
         src_masks = self.generate_forecast_mask(inp.device) 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
-        #logging.info("output from ts")
-        #logging.info(output)
+        if self.verbose:
+            logging.info("output from ts")
+            logging.info(output)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
         # Output
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
-        #logging.info("output after padding masks")
-        #logging.info(output.shape)
-        #logging.info(output)
+        if self.verbose:
+            logging.info("output after padding masks")
+            logging.info(output.shape)
+            logging.info(output)
         # Size of output weights is seq_len * dim, num classes
         output = self.output_layer(output)  # (batch_size, seq_len, num_classes=1)
-        #logging.info("output after final layer")
-        #logging.info(output.shape)
-        #logging.info(output)
+        if self.verbose:
+            logging.info("output after final layer")
+            logging.info(output.shape)
+            logging.info(output)
 
         return output
