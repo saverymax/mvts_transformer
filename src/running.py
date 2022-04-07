@@ -48,7 +48,7 @@ def pipeline_factory(config):
         return ClassiregressionDataset, collate_superv, SupervisedRunner
     if task == "forecast":
         # Verbose logging added for my debugging purposes.
-        return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, ForecastRunner
+        return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, partial(ForecastRunner, verbose=config['verbose'])
     else:
         raise NotImplementedError("Task '{}' not implemented".format(task))
 
@@ -239,9 +239,10 @@ def check_progress(epoch):
 
 class BaseRunner(object):
 
-    def __init__(self, model, dataloader, device, loss_module, optimizer=None, l2_reg=None, print_interval=10, console=True):
+    def __init__(self, model, dataloader, device, loss_module, optimizer=None, l2_reg=None, print_interval=10, console=True, verbose=False):
 
         self.model = model
+        self.verbose = verbose
         self.dataloader = dataloader
         self.device = device
         self.optimizer = optimizer
@@ -281,9 +282,10 @@ class ForecastRunner(BaseRunner):
     
     def train_epoch(self, epoch_num=None):
         """
-        Training method for forecasting. Copied from SupervisedRunner, 
+        Training method for forecasting. SupervisedRunner used as template. 
         """
         
+        logging.info("Beginning training using ForecastRunner")
         self.model = self.model.train()
 
         epoch_loss = 0  # total loss of epoch
@@ -296,11 +298,14 @@ class ForecastRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
-            #logging.info("Loss eval")
-            #logging.info("targets")
-            #logging.info(targets.shape)
-            #logging.info("preds")
-            #logging.info(predictions.shape)
+            if self.verbose:
+                logging.info("Model targets and preds")
+                logging.info("targets")
+                logging.info(targets.shape)
+                logging.info(targets)
+                logging.info("preds")
+                logging.info(predictions.shape)
+                logging.info(predictions)
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
@@ -329,7 +334,7 @@ class ForecastRunner(BaseRunner):
                 epoch_loss += batch_loss.item()  # add total loss of batch
 
         # Wandb logging
-        #wandb.log({"loss": epoch_loss})
+        wandb.log({"loss": epoch_loss})
 
 
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
