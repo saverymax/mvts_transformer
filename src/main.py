@@ -54,7 +54,7 @@ def main(config):
     # mix is my wandb username
     wandb.init(
         project="mvts-forecasting",
-        run=config['comment'],
+        name=config['comment'],
         entity="mix",
         tags=["forecasting", 'transformer'],
         config=wandb_config,
