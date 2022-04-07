@@ -47,7 +47,8 @@ def pipeline_factory(config):
     if (task == "classification") or (task == "regression"):
         return ClassiregressionDataset, collate_superv, SupervisedRunner
     if task == "forecast":
-        return partial(ForecastDataset, horizon=config['horizon']), collate_forecast, ForecastRunner
+        # Verbose logging added for my debugging purposes.
+        return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, ForecastRunner
     else:
         raise NotImplementedError("Task '{}' not implemented".format(task))
 
@@ -281,7 +282,6 @@ class ForecastRunner(BaseRunner):
     def train_epoch(self, epoch_num=None):
         """
         Training method for forecasting. Copied from SupervisedRunner, 
-        but including the forecasting mask.
         """
         
         self.model = self.model.train()
@@ -295,7 +295,12 @@ class ForecastRunner(BaseRunner):
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
-        
+
+            #logging.info("Loss eval")
+            #logging.info("targets")
+            #logging.info(targets.shape)
+            #logging.info("preds")
+            #logging.info(predictions.shape)
 
             loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
@@ -322,6 +327,10 @@ class ForecastRunner(BaseRunner):
             with torch.no_grad():
                 total_samples += len(loss)
                 epoch_loss += batch_loss.item()  # add total loss of batch
+
+        # Wandb logging
+        #wandb.log({"loss": epoch_loss})
+
 
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
         self.epoch_metrics['epoch'] = epoch_num
@@ -549,9 +558,6 @@ class SupervisedRunner(BaseRunner):
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
-
-        # Wandb logging
-        #wandb.log({"loss": epoch_loss})
 
         return self.epoch_metrics
 

@@ -167,6 +167,10 @@ class Options(object):
                                  help='Activation to be used in transformer encoder')
         self.parser.add_argument('--normalization_layer', choices={'BatchNorm', 'LayerNorm'}, default='BatchNorm',
                                  help='Normalization layer to be used internally in transformer encoder')
+        self.parser.add_argument('--verbose', action='store_true',
+                                 help='Include detailed logging information from data processing/model. For debugging purposes')
+
+
 
     def parse(self):
 
