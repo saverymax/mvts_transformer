@@ -355,7 +355,7 @@ class TSTransformerEncoderForecast(nn.Module):
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
-                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=verbose):
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False):
         super(TSTransformerEncoderForecast, self).__init__()
 
         self.verbose = verbose
