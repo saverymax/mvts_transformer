@@ -48,7 +48,7 @@ def pipeline_factory(config):
         return ClassiregressionDataset, collate_superv, SupervisedRunner
     if task == "forecast":
         # Verbose logging added for my debugging purposes.
-        return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, partial(ForecastRunner, verbose=config['verbose'])
+        return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, partial(ForecastRunner, verbose=config['verbose'], use_wandb=config['use_wandb'])
     else:
         raise NotImplementedError("Task '{}' not implemented".format(task))
 
@@ -239,10 +239,11 @@ def check_progress(epoch):
 
 class BaseRunner(object):
 
-    def __init__(self, model, dataloader, device, loss_module, optimizer=None, l2_reg=None, print_interval=10, console=True, verbose=False):
+    def __init__(self, model, dataloader, device, loss_module, optimizer=None, l2_reg=None, print_interval=10, console=True, verbose=False, use_wandb=False):
 
         self.model = model
         self.verbose = verbose
+        self.use_wandb = use_wandb
         self.dataloader = dataloader
         self.device = device
         self.optimizer = optimizer
@@ -334,7 +335,8 @@ class ForecastRunner(BaseRunner):
                 epoch_loss += batch_loss.item()  # add total loss of batch
 
         # Wandb logging
-        wandb.log({"loss": epoch_loss})
+        if use_wandb:
+            wandb.log({"loss": epoch_loss})
 
 
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch

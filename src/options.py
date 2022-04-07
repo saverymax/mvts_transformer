@@ -169,6 +169,8 @@ class Options(object):
                                  help='Normalization layer to be used internally in transformer encoder')
         self.parser.add_argument('--verbose', action='store_true',
                                  help='Include detailed logging information from data processing/model. For debugging purposes')
+        self.parser.add_argument('--use_wandb', action='store_true',
+                                 help='Use wandb logging. This repository also has the ability to use tensorboard, but that was not used for forecasting experiments')
 
 
 

@@ -42,23 +42,24 @@ def main(config):
     if config['verbose']:
         logging.info("Using verbose logging")
 
-    wandb_config = dict(
-        data_class=config['data_class'],
-        learning_rate=config['lr'],
-        d_model=config['d_model'],
-        max_len=config['max_seq_len'],
-        task=config['task'],
-        pollutant=config['pollutant'],
-    )
+    if config['use_wandb']:
+        wandb_config = dict(
+            data_class=config['data_class'],
+            learning_rate=config['lr'],
+            d_model=config['d_model'],
+            max_len=config['max_seq_len'],
+            task=config['task'],
+            pollutant=config['pollutant'],
+        )
 
-    # mix is my wandb username
-    wandb.init(
-        project="mvts-forecasting",
-        name=config['comment'],
-        entity="mix",
-        tags=["forecasting", 'transformer'],
-        config=wandb_config,
-    ) 
+        # mix is my wandb username. Change it to yours
+        wandb.init(
+            project="mvts-forecasting",
+            name=config['comment'],
+            entity="mix",
+            tags=["forecasting", 'transformer'],
+            config=wandb_config,
+        ) 
 
     total_epoch_time = 0
     total_eval_time = 0
