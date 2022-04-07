@@ -186,7 +186,7 @@ class ForecastDataset(Dataset):
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
         if self.verbose:
-            logging.info("get item shape:")
+            logging.info("X shape before forecast slice")
             logging.info(X.shape)
         # Remove last sequence element
         # Need to account for simple case if we want to setup a non-autoregressive model (for easy test-case, as the model will have labels)
