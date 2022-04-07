@@ -189,7 +189,9 @@ class ForecastDataset(Dataset):
             logging.info("get item shape:")
             logging.info(X.shape)
         # Remove last sequence element
-        X = X[:-self.h, :]  
+        # Need to account for simple case if we want to setup a non-autoregressive model (for easy test-case, as the model will have labels)
+        if self.h != 0:
+            X = X[:-self.h, :]  
         if self.verbose:
             logging.info("X shape after forecast selection")
             logging.info(X.shape)
