@@ -121,6 +121,7 @@ class BxlData(BaseData):
         self.config = config
         self.h = self.config['horizon']
         self.pollutant = self.config['pollutant']
+        self.verbose = self.config['verbose']
         assert self.pollutant is not None, "One of no2, pm10, or pm25 must be provided as a pollutant"
         assert self.h is not None, "A horizon value must be provided in input arguments"
 
@@ -140,14 +141,12 @@ class BxlData(BaseData):
         # For pretraining imputation I don't need labels I think
         self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
         #self.labels_df = self.all_df["no2"].to_frame()
-
-        #logging.info("printing dataframe")
-        #logging.info(self.all_df)
-        #logging.info("printing labels")
-        #logging.(self.labels_df)
-
-        #logging.(self.all_IDs)
-        #logging.info(type(self.all_IDs))
+        
+        if self.verbose:
+            logging.info("printing dataframe")
+            logging.info(self.all_df)
+            logging.info("printing labels")
+            logging.info(self.labels_df)
 
         if limit_size is not None:
             if limit_size > 1:

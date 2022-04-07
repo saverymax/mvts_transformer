@@ -162,13 +162,14 @@ class ClassiregressionDataset(Dataset):
 
 class ForecastDataset(Dataset):
 
-    def __init__(self, data, indices, horizon):
+    def __init__(self, data, indices, horizon, verbose):
         super(ForecastDataset, self).__init__()
 
         self.data = data  # this is a subclass of the BaseData class in data.py
         self.IDs = indices  # list of data IDs, but also mapping between integer index and ID
         self.feature_df = self.data.feature_df.loc[self.IDs]
         self.h = horizon
+        self.verbose = verbose
 
         self.labels_df = self.data.labels_df.loc[self.IDs]
 
@@ -184,27 +185,21 @@ class ForecastDataset(Dataset):
         """
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
-        #logging.info("get item shape:")
-        #logging.info(X.shape)
+        if self.verbose:
+            logging.info("get item shape:")
+            logging.info(X.shape)
         # Remove last sequence element
         X = X[:-self.h, :]  
-        #logging.info(X.shape)
+        if self.verbose:
+            logging.info("X shape after forecast selection")
+            logging.info(X.shape)
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
-        # Remove the first label
-        #logging.info("y shape")
-        #logging.info(y.shape)
+        # Remove first sequence element
         y = y[self.h:]
-        #logging.info("all ids in forecast dataset")
-        #logging.info(self.IDs)
-        #logging.info("selected ind in forecast dataset")
-        #logging.info(ind)
-        #logging.info(y.shape)
-        logging.info("ids in forecast dataset after change")
-        logging.info(ids)
-        
-        #logging.info("labels in forecast dataset")
-        #logging.info(y) 
-        #logging.info(y.shape)
+        if self.verbose:
+            logging.info("labels in forecast dataset")
+            logging.info(y.shape)
+            logging.info(y) 
 
         return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
