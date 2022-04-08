@@ -45,7 +45,7 @@ def pipeline_factory(config):
         return partial(TransductionDataset, mask_feats=config['mask_feats'],
                        start_hint=config['start_hint'], end_hint=config['end_hint']), collate_unsuperv, UnsupervisedRunner
     if (task == "classification") or (task == "regression"):
-        return ClassiregressionDataset, collate_superv, SupervisedRunner
+        return ClassiregressionDataset, collate_superv, partial(SupervisedRunner, use_wandb=config['use_wandb'])
     if task == "forecast":
         # Verbose logging added for my debugging purposes.
         return partial(ForecastDataset, horizon=config['horizon'], verbose=config['verbose']), collate_forecast, partial(ForecastRunner, verbose=config['verbose'], use_wandb=config['use_wandb'])
@@ -191,6 +191,7 @@ def validate(val_evaluator, tensorboard_writer, config, best_metrics, best_value
 
     logger.info("Evaluating on validation set ...")
     eval_start_time = time.time()
+    # Each runner has a .evaluate method for this purpose.
     with torch.no_grad():
         aggr_metrics, per_batch = val_evaluator.evaluate(epoch, keep_all=True)
     eval_runtime = time.time() - eval_start_time
@@ -297,7 +298,7 @@ class ForecastRunner(BaseRunner):
             targets = targets.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
-            predictions = self.model(X.to(self.device), padding_masks)
+            predictions = self.model(X.to(self.device), padding_masks) # Padding mask will be flipped in model so 1 is ignore.
 
             if self.verbose:
                 logging.info("Model targets and preds")
@@ -307,8 +308,11 @@ class ForecastRunner(BaseRunner):
                 logging.info("preds")
                 logging.info(predictions.shape)
                 logging.info(predictions)
+                logging.info("padding masks, 0 for ignore")
+                logging.info(padding_masks.shape)
+                logging.info(padding_masks)
 
-            loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
+            loss = self.loss_module(predictions, targets, padding_masks.unsqueeze(-1))  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over samples) used for optimization
 
@@ -335,8 +339,8 @@ class ForecastRunner(BaseRunner):
                 epoch_loss += batch_loss.item()  # add total loss of batch
 
         # Wandb logging
-        if use_wandb:
-            wandb.log({"loss": epoch_loss})
+        if self.use_wandb:
+            wandb.log({"train_loss": epoch_loss})
 
 
         epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
@@ -345,6 +349,7 @@ class ForecastRunner(BaseRunner):
         return self.epoch_metrics
 
     def evaluate(self, epoch_num=None, keep_all=True):
+        """For use when running on validation set, which is done once each epoch."""
 
         self.model = self.model.eval()
 
@@ -360,7 +365,7 @@ class ForecastRunner(BaseRunner):
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
             predictions = self.model(X.to(self.device), padding_masks)
 
-            loss = self.loss_module(predictions, targets)  # (batch_size,) loss for each sample in the batch
+            loss = self.loss_module(predictions, targets, padding_masks.unsqueeze(-1))  # (batch_size,) loss for each sample in the batch
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)
 
@@ -381,6 +386,10 @@ class ForecastRunner(BaseRunner):
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
 
+        # Wandb logging
+        if self.use_wandb:
+            wandb.log({"val_loss": epoch_loss})
+
         if keep_all:
             return self.epoch_metrics, per_batch
         else:
@@ -398,6 +407,8 @@ class UnsupervisedRunner(BaseRunner):
         for i, batch in enumerate(self.dataloader):
 
             X, targets, target_masks, padding_masks, IDs = batch
+            logging.info("X in runner")
+            logging.info(X)
             targets = targets.to(self.device)
             target_masks = target_masks.to(self.device)  # 1s: mask and predict, 0s: unaffected input (ignore)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
@@ -408,9 +419,17 @@ class UnsupervisedRunner(BaseRunner):
             # noise masked or padding masked.
             # Notice that it is only these target masks that are passed to loss.
             target_masks = target_masks * padding_masks.unsqueeze(-1)
-            #logging.info("cascaded masks")
-            #logging.info(target_masks.shape)
-            #logging.info(target_masks)
+            logging.info("cascaded masks")
+            logging.info(target_masks.shape)
+            logging.info(target_masks)
+
+            logging.info("targets in runner")
+            logging.info(targets.shape)
+            logging.info(targets)
+            logging.info("predictions in runner")
+            logging.info(predictions.shape)
+            logging.info(predictions)
+        
             # From the paper:
             # Predictions are made on full sequences.
             # but only the predictions on the masked values are considered in the Mean Squared Error loss
@@ -566,6 +585,9 @@ class SupervisedRunner(BaseRunner):
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
 
+        if self.use_wandb:
+            wandb.log({"train_loss": epoch_loss})
+
         return self.epoch_metrics
 
     def evaluate(self, epoch_num=None, keep_all=True):
@@ -607,6 +629,9 @@ class SupervisedRunner(BaseRunner):
         epoch_loss = epoch_loss / total_samples  # average loss per element for whole epoch
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
+
+        if self.use_wandb:
+            wandb.log({"val_loss": epoch_loss})
 
         if self.classification:
             predictions = torch.from_numpy(np.concatenate(per_batch['predictions'], axis=0))

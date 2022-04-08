@@ -106,8 +106,9 @@ def main(config):
         try:
             test_indices = [int(ind) for ind in test_indices]  # integer indices
         except ValueError:
-            pass  # in case indices are non-integers
+            ptrainass  # in case indices are non-integers
         logger.info("Loaded {} test IDs from file: '{}'".format(len(test_indices), config['test_from']))
+    # If val pattern is provided, will load BXL data again if pattern not handled in code
     if config['val_pattern']:  # used if val data come from different files / file patterns
         val_data = data_class(config['data_dir'], pattern=config['val_pattern'], n_proc=-1, config=config)
         val_indices = val_data.all_IDs
@@ -115,6 +116,7 @@ def main(config):
     # Note: currently a validation set must exist, either with `val_pattern` or `val_ratio`
     # Using a `val_pattern` means that `val_ratio` == 0 and `test_ratio` == 0
     if config['val_ratio'] > 0:
+        logging.info("Splitting data using val ratio %s", config['val_ratio'])
         train_indices, val_indices, test_indices = split_dataset(data_indices=my_data.all_IDs,
                                                                  validation_method=validation_method,
                                                                  n_splits=1,
