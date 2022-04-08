@@ -7,13 +7,13 @@ def get_loss_module(config):
 
     task = config['task']
 
-    if (task == "imputation") or (task == "transduction"):
+    if (task == "imputation") or (task == "transduction") or (task == "forecast"):
         return MaskedMSELoss(reduction='none')  # outputs loss for each batch element
 
     if task == "classification":
         return NoFussCrossEntropyLoss(reduction='none')  # outputs loss for each batch sample
 
-    if task == "regression" or task == "forecast":
+    if task == "regression":
         return nn.MSELoss(reduction='none')  # outputs loss for each batch sample
 
     else:
