@@ -116,6 +116,7 @@ def collate_superv(data, max_len=None):
         end = min(lengths[i], max_len)
         X[i, :end, :] = features[i][:end, :]
 
+    # Targets need to be stacked because they come in from __getitem__ as a tuple
     targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
 
     #logging.info("collate targets shape")
@@ -151,8 +152,8 @@ class ClassiregressionDataset(Dataset):
 
         X = self.feature_df.loc[self.IDs[ind]].values  # (seq_length, feat_dim) array
         y = self.labels_df.loc[self.IDs[ind]].values  # (num_labels,) array
-        logging.info("y shape")
-        logging.info(y.shape)
+        #logging.info("y shape")
+        #logging.info(y.shape)
 
         return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
@@ -213,6 +214,8 @@ def collate_forecast(data, max_len=None):
     """Build mini-batch tensors from a list of (X, mask) tuples. Mask input. Create
     A little discussion of the collate function:
         https://discuss.pytorch.org/t/how-to-use-collate-fn/27181/3
+        __getitem__ is called a bunch and then collate puts the batch together.
+
     Args:
         data: len(batch_size) list of tuples (X, y).
             - X: torch tensor of shape (seq_length, feat_dim); variable seq_length.
@@ -223,31 +226,44 @@ def collate_forecast(data, max_len=None):
         max_len is set in model_factory, where it uses max_seq_len = data.max_seq_len. This is passed to collate in main.py
 
     Returns:
-        X: (batch_size, padded_length, feat_dim) torch tensor of masked features (input)
-        targets: (batch_size, padded_length, feat_dim) torch tensor of unmasked features (output)
+        X: (batch_size, padded_length, feat_dim) torch tensor of unmasked features (input)
+        targets: (batch_size, padded_length, 1) torch tensor of unmasked features (output)
         padding_masks: (batch_size, padded_length) boolean tensor, 1 means keep vector at this position, 0 means padding
     """
     batch_size = len(data)
     features, labels, IDs = zip(*data)
+    logging.info("labels shape in collate")
+    #logging.info(labels.shape)
+    logging.info(labels[0].shape[-1])
     #logging.info("max len in collate")
     #logging.info(max_len)
 
     # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
     lengths = [X.shape[0] for X in features]  # original sequence length for each time series
+    logging.info("lengths, important for padding")
+    logging.info(lengths)
     if max_len is None:
         max_len = max(lengths)
     X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
+    targets = torch.zeros(batch_size, max_len, 1)  # (batch_size, padded_length, 1)
 
     # Convert from 2D to 3D tensors.
     for i in range(batch_size):
         end = min(lengths[i], max_len)
+        logging.info(i)
+        logging.info(end)
         X[i, :end, :] = features[i][:end, :]
+        targets[i, :end, :] = labels[i][:end, :] 
 
-    targets = torch.stack(labels, dim=0)  # (batch_size, num_labels)
+    #targets = torch.stack(Y, dim=0)  # (batch_size, num_labels)
     #logging.info("collate targets shape")
     #logging.info(targets.shape)
+    #logging.info(targets)
 
     padding_masks = padding_mask(torch.tensor(lengths, dtype=torch.int16), max_len=max_len) # (batch_size, padded_length) boolean tensor, "1" means keep
+    #logging.info("collate padding_masks")
+    #logging.info(padding_masks.shape)
+    #logging.info(padding_masks)
 
     return X, targets, padding_masks, IDs
 
@@ -329,9 +345,7 @@ def collate_unsuperv(data, max_len=None, mask_compensation=False):
 
     # Notice that here the targets are X.
     targets = X.clone()
-    #logging.info("x before mask")
-    #logging.info(X)
-    # Targets are masked here and not in model
+    # X is masked here and not in model--but not the targets 
     # However, padding mask is added in model.
     X = X * target_masks  # mask input
     #logging.info("X after")
