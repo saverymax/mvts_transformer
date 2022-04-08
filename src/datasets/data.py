@@ -125,22 +125,24 @@ class BxlData(BaseData):
         assert self.pollutant is not None, "One of no2, pm10, or pm25 must be provided as a pollutant"
         assert self.h is not None, "A horizon value must be provided in input arguments"
 
-        df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl.csv"))
-        df.sort_values(by=["station", "time"], ascending=[True, True], inplace=True)
-        df.set_index(keys="station", inplace=True)
+        df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_all_traffic_stations.csv"))
+        # Could also sort on split_time
+        df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
+        df.set_index(keys="station_subset", inplace=True)
         # Don't need to do this.
         # Create numeric index
         #index_n = list(np.repeat(list(range(1, 41+1)), df.loc[df.index[0]].shape[0]))
         #assert len(index_n) == df.shape[0]
         #df['numeric_index'] = index_n
         #df.set_index(keys="numeric_index", inplace=True)
-        self.all_df = df[["pm25", "pm10","no2","covid", "traffic_vol"]]
+        self.all_df = df[[
+            "pm25", "pm10","no2","covid",
+            "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
+            "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
         # ID for each sample, where each sample is a time series.
-        self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
-        # chem will be pollutant to predict
-        # For pretraining imputation I don't need labels I think
+        # Each ID will be for a measuring station (or station subdivided into multiple ts)
+        self.all_IDs = self.all_df.index.unique()  # (integer indices 0 ... num_samples-1)
         self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
-        #self.labels_df = self.all_df["no2"].to_frame()
         
         if self.verbose:
             logging.info("printing dataframe")
@@ -159,13 +161,17 @@ class BxlData(BaseData):
         # use all features
         self.feature_names = self.all_df.columns
         self.feature_df = self.all_df
-        series_len = df.loc[df.index[0]].shape[0] # Should be 458
-        assert series_len == 458
-        #logging.info("series length")
-        #logging.info(series_len)
+        series_len = df.loc[df.index[0]].shape[0]
+        #assert series_len == 458
         # For forecasting with our set horizon, we have to decrease the max length to use in the model
         assert self.h < series_len, "Horizon must be at least 1 less than the length of the time series"
         self.max_seq_len = series_len - self.h
+
+        if self.verbose:
+            logging.info("Series length")
+            logging.info(series_len)
+            logging.info("Max len")
+            logging.info(self.max_seq_len)
 
 
 class HDD_data(BaseData):
