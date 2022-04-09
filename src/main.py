@@ -241,6 +241,9 @@ def main(config):
                             pin_memory=True,
                             collate_fn=lambda x: collate_fn(x, max_len=model.max_len))
 
+    # We pass the train indices to the dataset class, which
+    # when initiated, will select samples to train on from the whole
+    # dataset. my_data has been loaded from the raw data.
     train_dataset = dataset_class(my_data, train_indices)
 
     train_loader = DataLoader(dataset=train_dataset,

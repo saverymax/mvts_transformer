@@ -312,6 +312,12 @@ class ForecastRunner(BaseRunner):
                 logging.info(padding_masks)
 
             loss = self.loss_module(predictions, targets, padding_masks.unsqueeze(-1))  # (batch_size,) loss for each sample in the batch
+
+            if self.verbose:
+                logging.info("Loss in forecast runner")
+                logging.info(loss.shape)
+                logging.info(loss)
+
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over samples) used for optimization
 
@@ -434,6 +440,11 @@ class UnsupervisedRunner(BaseRunner):
             # but only the predictions on the masked values are considered in the Mean Squared Error loss
             # This is why no target mask is passed to model
             loss = self.loss_module(predictions, targets, target_masks)  # (num_active,) individual loss (square error per element) for each active value in batch
+
+            #logging.info("Loss in Unsuper runner")
+            #logging.info(loss.shape)
+            #logging.info(loss)
+
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over active elements) used for optimization
 
