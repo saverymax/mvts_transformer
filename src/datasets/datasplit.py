@@ -1,4 +1,5 @@
 import numpy as np
+#import logging
 from sklearn import model_selection
 
 
@@ -8,6 +9,8 @@ def split_dataset(data_indices, validation_method, n_splits, validation_ratio, t
     """
     Splits dataset (i.e. the global datasets indices) into a test set and a training/validation set.
     The training/validation set is used to produce `n_splits` different configurations/splits of indices.
+    Args: 
+        data_indices: Unique indices from pandas dataframe. For forecasting will be station identifiers (strings).
 
     Returns:
         test_indices: numpy array containing the global datasets indices corresponding to the test set
@@ -178,6 +181,8 @@ class ShuffleSplitter(DataSplitter):
                 each array containing the global datasets indices corresponding to a fold's validation set
         """
 
+        # From sklearn:
+        # Yields indices to split data into training and test sets.
         splitter = model_selection.ShuffleSplit(n_splits=n_splits, test_size=validation_ratio,
                                                 random_state=random_state)
         # get local indices, i.e. indices in [0, len(train_val_labels)), per fold
@@ -186,4 +191,10 @@ class ShuffleSplitter(DataSplitter):
         self.train_indices = [self.train_val_indices[fold_indices] for fold_indices in train_indices]
         self.val_indices = [self.train_val_indices[fold_indices] for fold_indices in val_indices]
 
+        #logging.info("indices split")
+        #logging.info(self.train_val_indices)
+        #logging.info(train_indices)
+        #logging.info(val_indices)
+        #logging.info(self.train_indices)
+        #logging.info(self.val_indices)
         return
