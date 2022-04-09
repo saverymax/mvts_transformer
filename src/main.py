@@ -42,9 +42,12 @@ def main(config):
     if config['verbose']:
         logging.info("Using verbose logging")
 
+    # TODO: Add actual seq len of ts to config, but it's dynamically defined later 
     if config['use_wandb']:
         wandb_config = dict(
             data_class=config['data_class'],
+            batch_size=config['batch_size'],
+            val_ration=config['val_ratio'],
             learning_rate=config['lr'],
             d_model=config['d_model'],
             max_len=config['max_seq_len'],
