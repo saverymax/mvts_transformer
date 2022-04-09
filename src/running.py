@@ -297,7 +297,7 @@ class ForecastRunner(BaseRunner):
             targets = targets.to(self.device)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
             # regression: (batch_size, num_labels); classification: (batch_size, num_classes) of logits
-            predictions = self.model(X.to(self.device), padding_masks) # Padding mask will be flipped in model so 1 is ignore.
+            predictions = self.model(X.to(self.device), padding_masks)  # Padding mask will be flipped in model so 1 is ignore.
 
             if self.verbose:
                 logging.info("Model targets and preds")
@@ -432,7 +432,7 @@ class UnsupervisedRunner(BaseRunner):
             # From the paper:
             # Predictions are made on full sequences.
             # but only the predictions on the masked values are considered in the Mean Squared Error loss
-            # This is why no target mask is passed to model 
+            # This is why no target mask is passed to model
             loss = self.loss_module(predictions, targets, target_masks)  # (num_active,) individual loss (square error per element) for each active value in batch
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over active elements) used for optimization
