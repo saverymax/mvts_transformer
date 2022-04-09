@@ -11,7 +11,6 @@ import time
 import pickle
 from functools import partial
 
-import ipdb
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
@@ -407,8 +406,8 @@ class UnsupervisedRunner(BaseRunner):
         for i, batch in enumerate(self.dataloader):
 
             X, targets, target_masks, padding_masks, IDs = batch
-            logging.info("X in runner")
-            logging.info(X)
+            #logging.info("X in runner")
+            #logging.info(X)
             targets = targets.to(self.device)
             target_masks = target_masks.to(self.device)  # 1s: mask and predict, 0s: unaffected input (ignore)
             padding_masks = padding_masks.to(self.device)  # 0s: ignore
@@ -419,16 +418,16 @@ class UnsupervisedRunner(BaseRunner):
             # noise masked or padding masked.
             # Notice that it is only these target masks that are passed to loss.
             target_masks = target_masks * padding_masks.unsqueeze(-1)
-            logging.info("cascaded masks")
-            logging.info(target_masks.shape)
-            logging.info(target_masks)
+            #logging.info("cascaded masks")
+            #logging.info(target_masks.shape)
+            #logging.info(target_masks)
 
-            logging.info("targets in runner")
-            logging.info(targets.shape)
-            logging.info(targets)
-            logging.info("predictions in runner")
-            logging.info(predictions.shape)
-            logging.info(predictions)
+            #logging.info("targets in runner")
+            #logging.info(targets.shape)
+            #logging.info(targets)
+            #logging.info("predictions in runner")
+            #logging.info(predictions.shape)
+            #logging.info(predictions)
         
             # From the paper:
             # Predictions are made on full sequences.
