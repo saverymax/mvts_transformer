@@ -168,9 +168,15 @@ class ForecastDataset(Dataset):
 
         self.data = data  # this is a subclass of the BaseData class in data.py
         self.IDs = indices  # list of data IDs, but also mapping between integer index and ID
+        # Below will be the subset of data selected from variable data,
+        # which is Alll the data.
         self.feature_df = self.data.feature_df.loc[self.IDs]
         self.h = horizon
         self.verbose = verbose
+
+        if self.verbose:
+            logging.info("Dataset ids") 
+            logging.info(indices)
 
         self.labels_df = self.data.labels_df.loc[self.IDs]
 
@@ -178,7 +184,7 @@ class ForecastDataset(Dataset):
         """
         For a given integer index, returns the corresponding (seq_length, feat_dim) array and a noise mask of same shape
         Args:
-            ind: integer index of sample in dataset
+            ind: integer index of sample in dataset (0 through number of samples)
         Returns:
             X: (seq_length, feat_dim) tensor of the multivariate time series corresponding to a sample
             y: (num_labels,) tensor of labels (num_labels > 1 for multi-task models) for each sample
@@ -189,6 +195,8 @@ class ForecastDataset(Dataset):
         if self.verbose:
             logging.info("X shape before forecast slice")
             logging.info(X.shape)
+            logging.info("Index of sample in dataset")
+            logging.info(ind)
         # Remove last sequence element
         # Need to account for simple case if we want to setup a non-autoregressive model (for easy test-case, as the model will have labels)
         if self.h != 0:
@@ -207,7 +215,7 @@ class ForecastDataset(Dataset):
         return torch.from_numpy(X), torch.from_numpy(y), self.IDs[ind]
 
     def __len__(self):
-        return len(self.IDs) - self.h
+        return len(self.IDs)
 
 
 def collate_forecast(data, max_len=None):
