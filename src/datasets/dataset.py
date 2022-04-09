@@ -232,22 +232,24 @@ def collate_forecast(data, max_len=None):
     """
     batch_size = len(data)
     features, labels, IDs = zip(*data)
-    logging.info("labels shape in collate")
+    #logging.info("labels shape in collate")
     #logging.info(labels.shape)
-    logging.info(labels[0].shape[-1])
+    #logging.info(labels[0].shape[-1])
     #logging.info("max len in collate")
     #logging.info(max_len)
 
     # Stack and pad features and masks (convert 2D to 3D tensors, i.e. add batch dimension)
     lengths = [X.shape[0] for X in features]  # original sequence length for each time series
-    logging.info("lengths, important for padding")
-    logging.info(lengths)
+    #logging.info("lengths, important for padding")
+    #logging.info(lengths)
     if max_len is None:
         max_len = max(lengths)
     X = torch.zeros(batch_size, max_len, features[0].shape[-1])  # (batch_size, padded_length, feat_dim)
+    # Note that 1 will need to be changed if doing forecasting "classification"
     targets = torch.zeros(batch_size, max_len, 1)  # (batch_size, padded_length, 1)
 
     # Convert from 2D to 3D tensors.
+    # This loop is necessary to make padding possible.
     for i in range(batch_size):
         end = min(lengths[i], max_len)
         logging.info(i)
