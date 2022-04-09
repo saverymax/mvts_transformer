@@ -110,8 +110,6 @@ class BxlData(BaseData):
         labels_df: (num_samples, num_labels) pd.DataFrame of label(s) for each sample
         max_seq_len: maximum sequence (time series) length. If None, script argument `max_seq_len` will be used.
             (Moreover, script argument overrides this attribute)
-
-    TODO: Finish loading data and make sure it loads with the model. I think I need to index with dates,
     """
 
     def __init__(self, root_dir, chem=None, file_list=None, pattern=None, n_proc=1, limit_size=None, config=None):
@@ -129,19 +127,13 @@ class BxlData(BaseData):
         # Could also sort on split_time
         df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
         df.set_index(keys="station_subset", inplace=True)
-        # Don't need to do this.
-        # Create numeric index
-        #index_n = list(np.repeat(list(range(1, 41+1)), df.loc[df.index[0]].shape[0]))
-        #assert len(index_n) == df.shape[0]
-        #df['numeric_index'] = index_n
-        #df.set_index(keys="numeric_index", inplace=True)
         self.all_df = df[[
             "pm25", "pm10","no2","covid",
             "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
             "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
         # ID for each sample, where each sample is a time series.
         # Each ID will be for a measuring station (or station subdivided into multiple ts)
-        self.all_IDs = self.all_df.index.unique()  # (integer indices 0 ... num_samples-1)
+        self.all_IDs = self.all_df.index.unique()  # (ids for each station
         self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
         
         if self.verbose:
@@ -149,6 +141,8 @@ class BxlData(BaseData):
             logging.info(self.all_df)
             logging.info("printing labels")
             logging.info(self.labels_df)
+            logging.info("All ids")
+            logging.info(self.all_IDs)
 
         if limit_size is not None:
             if limit_size > 1:
@@ -397,9 +391,8 @@ class TSRegressionArchive(BaseData):
         #logging.info(self.max_seq_len)
 
         self.all_IDs = self.all_df.index.unique()  # all sample IDs (integer indices 0 ... num_samples-1)
-        #logging.info("ids")
+        #logging.info("Supervised ids")
         #logging.info(self.all_IDs)
-        #logging.info(type(self.all_IDs))
 
         if limit_size is not None:
             if limit_size > 1:
