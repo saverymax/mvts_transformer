@@ -123,7 +123,11 @@ class BxlData(BaseData):
         assert self.pollutant is not None, "One of no2, pm10, or pm25 must be provided as a pollutant"
         assert self.h is not None, "A horizon value must be provided in input arguments"
 
-        df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_all_traffic_stations.csv"))
+        assert pattern == None or pattern == "bxl_test", "For forecasting with Bxl data, pattern must be one of bxl_test or None"
+        if pattern == "bxl_test":
+            df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_test.csv"))
+        else:
+            df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_train.csv"))
         # Could also sort on split_time
         df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
         df.set_index(keys="station_subset", inplace=True)
