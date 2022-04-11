@@ -4,7 +4,9 @@
 This code originally corresponded to the [paper](https://dl.acm.org/doi/10.1145/3447548.3467401): George Zerveas et al. **A Transformer-based Framework for Multivariate Time Series Representation Learning**, in _Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '21), August 14-18, 2021_.
 ArXiV version: https://arxiv.org/abs/2010.02803. 
 
-It has been forked from the original repository for the purpose of adding a forecasting module (discussed briefly in the paper), in addition to the pretraining, regression, and classification utility already available. As work on this project progresses, the forecasting options will be described below.
+It has been forked from the original repository for the purpose of adding a forecasting module (discussed briefly in the paper), in addition to the pretraining, regression, and classification utility already available. As work on this project progresses, the forecasting options will be described below. 
+
+Documentation for the forecasting work and use of the transformer for forecasting Brussels pollution levels during the COVID-19 lockdowns can be found at https://saverymax.github.io/multi-modal-pollution/.
 
 If you find this code or any of the ideas in the paper useful, please consider citing:
 ```buildoutcfg
