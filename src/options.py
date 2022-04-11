@@ -71,7 +71,7 @@ class Options(object):
                                  help="""Regex pattern used to select files contained in `data_dir` exclusively for the validation set.
                             If None, a positive `val_ratio` will be used to reserve part of the common data set.""")
         self.parser.add_argument('--test_pattern', type=str,
-                                 help="""Regex pattern used to select files contained in `data_dir` exclusively for the test set.
+                                 help="""Regex pattern used to select files contained in `data_dir` exclusively for the test set. For forecasting with Bxl data, must be None (for training) or bxl_data (for testing)..
                             If None, `test_ratio`, if specified, will be used to reserve part of the common data set.""")
         self.parser.add_argument('--normalization',
                                  choices={'standardization', 'minmax', 'per_sample_std', 'per_sample_minmax'},
