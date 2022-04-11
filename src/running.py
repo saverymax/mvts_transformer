@@ -361,7 +361,7 @@ class ForecastRunner(BaseRunner):
         epoch_loss = 0  # total loss of epoch
         total_samples = 0  # total samples in epoch
 
-        per_batch = {'target_masks': [], 'targets': [], 'predictions': [], 'metrics': [], 'IDs': []}
+        per_batch = {'targets': [], 'predictions': [], 'metrics': [], 'IDs': []}
         for i, batch in enumerate(self.dataloader):
 
             X, targets, padding_masks, IDs = batch
@@ -374,10 +374,12 @@ class ForecastRunner(BaseRunner):
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)
 
-            per_batch['targets'].append(targets.cpu().numpy())
-            per_batch['predictions'].append(predictions.cpu().numpy())
-            per_batch['metrics'].append([loss.cpu().numpy()])
-            per_batch['IDs'].append(IDs)
+            with torch.no_grad():
+                # Nice to remove the singleton dimension for output processing
+                per_batch['targets'].append(targets.squeeze(-1).tolist())
+                per_batch['predictions'].append(predictions.squeeze(-1).tolist())
+                per_batch['metrics'].append([loss.tolist()])
+                per_batch['IDs'].append(IDs)
 
             metrics = {"loss": mean_loss}
             if i % self.print_interval == 0:
@@ -623,10 +625,11 @@ class SupervisedRunner(BaseRunner):
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)
 
-            per_batch['targets'].append(targets.cpu().numpy())
-            per_batch['predictions'].append(predictions.cpu().numpy())
-            per_batch['metrics'].append([loss.cpu().numpy()])
-            per_batch['IDs'].append(IDs)
+            with torch.no_grad():
+                per_batch['targets'].append(targets.cpu().numpy())
+                per_batch['predictions'].append(predictions.cpu().numpy())
+                per_batch['metrics'].append([loss.cpu().numpy()])
+                per_batch['IDs'].append(IDs)
 
             metrics = {"loss": mean_loss}
             if i % self.print_interval == 0:
