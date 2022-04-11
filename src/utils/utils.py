@@ -1,4 +1,5 @@
 import json
+import csv
 import os
 import sys
 import builtins
@@ -102,6 +103,48 @@ def create_dirs(dirs):
     except Exception as err:
         print("Creating directories error: {0}".format(err))
         exit(-1)
+
+
+def write_forecast_output(output_dict, output_dir, exp_name):
+    """
+    Write predictions, targets, and IDs to a csv for later evaluation.
+
+    Args:
+        Dictionary generated from runner
+    """
+    output_json = os.path.join(output_dir, "predictions", "forecast_out_{}.json".format(exp_name))
+    output_csv = os.path.join(output_dir, "predictions", "forecast_out_{}.csv".format(exp_name))
+    with open(output_json, "w") as f:
+        json.dump(output_dict, f, indent=4)
+    ids = output_dict['IDs']
+    preds = output_dict['predictions']
+    targets = output_dict['targets']
+    
+    with open(output_csv, "w") as f:
+        # Write the header with station seq elements
+        wr = csv.writer(f)
+        logger.info("preds 00")
+        logger.info(preds[0][0])
+        logger.info(len(preds[0][0]))
+        logger.info(np.arange(1, len(preds[0][0])+1))
+        logger.info(list(np.arange(1, len(preds[0][0])+1)))
+        logger.info(list(np.arange(1, len(preds[0][0])+1)).insert(0, "station"))
+        ts_seq = list(np.arange(1, len(preds[0][0])+1))
+        logging.info(ts_seq)
+        ts_seq.insert(0, "station")
+        logging.info(ts_seq)
+        wr.writerow(ts_seq)
+        # Iterate through samples in each batch
+        # i will be tuples of stations
+        for i, pred, target in zip(ids, preds, targets):
+            for station, pred_j, target_j in zip(i, pred, target):
+                pred_j.insert(0, "{}_pred".format(station))
+                wr.writerow(pred_j)
+                target_j.insert(0, "{}_obs".format(station))
+                wr.writerow(target_j)
+                #f.write("{0}_pred, {1}\n".format(station, ",".join(pred_j)))
+                #f.write("{0}_obs, {1}\n".format(station, ",".join(target)))
+   
 
 
 def export_performance_metrics(filepath, metrics_table, header, book=None, sheet_name="metrics"):
