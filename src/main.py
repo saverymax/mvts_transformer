@@ -58,7 +58,8 @@ def main(config):
         # mix is my wandb username. Change it to yours
         wandb.init(
             project="mvts-forecasting",
-            name=config['comment'],
+            name=config['experiment_name'],
+            notes=config['comment'],
             entity="mix",
             tags=["forecasting", 'transformer'],
             config=wandb_config,
@@ -118,6 +119,7 @@ def main(config):
 
     # Note: currently a validation set must exist, either with `val_pattern` or `val_ratio`
     # Using a `val_pattern` means that `val_ratio` == 0 and `test_ratio` == 0
+    # test_ratio will by default by 0 and test indices by default None, so test_set_ratio will not be used unless specfically configured.
     if config['val_ratio'] > 0:
         logging.info("Splitting data using val ratio %s", config['val_ratio'])
         train_indices, val_indices, test_indices = split_dataset(data_indices=my_data.all_IDs,
@@ -202,6 +204,7 @@ def main(config):
     lr = config['lr']  # current learning step
     # Load model and optimizer state
     if args.load_model:
+        logger.info("Loading saved model from %s", config['load_model'])
         model, optimizer, start_epoch = utils.load_model(model, config['load_model'], optimizer, config['resume'],
                                                          config['change_output'],
                                                          config['lr'],
@@ -212,6 +215,7 @@ def main(config):
     loss_module = get_loss_module(config)
 
     if config['test_only'] == 'testset':  # Only evaluate and skip training
+        logger.info("Running test evaluation ONLY")
         dataset_class, collate_fn, runner_class = pipeline_factory(config)
         test_dataset = dataset_class(test_data, test_indices)
 
@@ -224,10 +228,12 @@ def main(config):
         test_evaluator = runner_class(model, test_loader, device, loss_module,
                                             print_interval=config['print_interval'], console=config['console'])
         aggr_metrics_test, per_batch_test = test_evaluator.evaluate(keep_all=True)
-        print_str = 'Test Summary: '
-        for k, v in aggr_metrics_test.items():
-            print_str += '{}: {:8f} | '.format(k, v)
-        logger.info(print_str)
+        logger.info("Test eval output")
+        logger.info(aggr_metrics_test)
+        #logging.info(per_batch_test)
+        if config['task'] == 'forecast':        
+            utils.write_forecast_output(per_batch_test, config['output_dir'], config['experiment_name'])
+
         return
     
     # Initialize data generators
@@ -322,6 +328,7 @@ def main(config):
 
     # Export evolution of metrics over epochs
     header = metrics_names
+    # Note that the experiment name will be used to hold the model checkpoints and all output from training and testing 
     metrics_filepath = os.path.join(config["output_dir"], "metrics_" + config["experiment_name"] + ".xls")
     book = utils.export_performance_metrics(metrics_filepath, metrics, header, sheet_name="metrics")
 
