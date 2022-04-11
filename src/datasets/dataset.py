@@ -260,8 +260,6 @@ def collate_forecast(data, max_len=None):
     # This loop is necessary to make padding possible.
     for i in range(batch_size):
         end = min(lengths[i], max_len)
-        logging.info(i)
-        logging.info(end)
         X[i, :end, :] = features[i][:end, :]
         targets[i, :end, :] = labels[i][:end, :] 
 
