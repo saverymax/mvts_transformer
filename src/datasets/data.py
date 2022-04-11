@@ -132,7 +132,7 @@ class BxlData(BaseData):
         df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
         df.set_index(keys="station_subset", inplace=True)
         self.all_df = df[[
-            "pm25", "pm10","no2","covid",
+            "pm25", "pm10","no2","covid", "station_int",
             "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
             "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
         # ID for each sample, where each sample is a time series.
