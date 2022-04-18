@@ -278,7 +278,7 @@ class TSTransformerEncoderClassiregressor(nn.Module):
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
-                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False):
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False):
         super(TSTransformerEncoderClassiregressor, self).__init__()
 
         self.verbose = verbose
@@ -355,7 +355,6 @@ class TSTransformerEncoderClassiregressor(nn.Module):
             logging.info(output.shape)
             logging.info(output)
         
-
         output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
         output = self.output_layer(output)  # (batch_size, num_classes)
 
