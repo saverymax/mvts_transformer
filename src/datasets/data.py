@@ -120,6 +120,7 @@ class BxlData(BaseData):
         self.h = self.config['horizon']
         self.pollutant = self.config['pollutant']
         self.verbose = self.config['verbose']
+        self.remove_var = self.config['remove_var']
         assert self.pollutant is not None, "One of no2, pm10, or pm25 must be provided as a pollutant"
         assert self.h is not None, "A horizon value must be provided in input arguments"
 
@@ -131,18 +132,26 @@ class BxlData(BaseData):
         # Could also sort on split_time
         df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
         df.set_index(keys="station_subset", inplace=True)
+        # For variable ablation experiments
         self.all_df = df[[
-            "pm25", "pm10","no2","covid", "station_int",
-            "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
-            "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
+                "pm25", "pm10","no2","covid", "station_int",
+                "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
+                "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
+        if self.remove_var is not None:
+            logging.info("Dropping variable {}".format(self.remove_var))
+            self.all_df.drop(self.remove_var, axis=1, inplace=True)
+        logging.info("Columns in df")
+        logging.info(self.all_df.columns)
+            
         # ID for each sample, where each sample is a time series.
         # Each ID will be for a measuring station (or station subdivided into multiple ts)
         self.all_IDs = self.all_df.index.unique()  # (ids for each station
         self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
         
         if self.verbose:
+            pd.set_option('display.max_columns', 10)
             logging.info("printing dataframe")
-            logging.info(self.all_df)
+            logging.info(self.all_df.head(10))
             logging.info("printing labels")
             logging.info(self.labels_df)
             logging.info("All ids")
@@ -160,7 +169,6 @@ class BxlData(BaseData):
         self.feature_names = self.all_df.columns
         self.feature_df = self.all_df
         series_len = df.loc[df.index[0]].shape[0]
-        #assert series_len == 458
         # For forecasting with our set horizon, we have to decrease the max length to use in the model
         assert self.h < series_len, "Horizon must be at least 1 less than the length of the time series"
         self.max_seq_len = series_len - self.h
