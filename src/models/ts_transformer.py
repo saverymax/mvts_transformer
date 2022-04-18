@@ -50,7 +50,7 @@ def model_factory(config, data):
                                                         num_classes=num_labels,
                                                         dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                         activation=config['activation'],
-                                                        norm=config['normalization_layer'], freeze=config['freeze'])
+                                                        norm=config['normalization_layer'], freeze=config['freeze'], verbose=verbose)
     if (task == "forecast"):
         num_labels = data.labels_df.shape[1]
         return TSTransformerEncoderForecast(feat_dim, max_seq_len, config['d_model'],
@@ -281,6 +281,8 @@ class TSTransformerEncoderClassiregressor(nn.Module):
                  dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False):
         super(TSTransformerEncoderClassiregressor, self).__init__()
 
+        self.verbose = verbose
+
         self.max_len = max_len
         self.d_model = d_model
         self.n_heads = n_heads
@@ -329,17 +331,40 @@ class TSTransformerEncoderClassiregressor(nn.Module):
         inp = self.pos_enc(inp)  # add positional encoding
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
-        #logging.info("output from ts")
-        #logging.info(output)
+
+        if self.verbose:
+            logging.info("output from ts")
+            logging.info(output)
+
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
 
-        # Output
+        if self.verbose:
+            logging.info("Padding masks in forward")
+            logging.info(padding_masks.shape)
+            logging.info(padding_masks)
+            logging.info("output before padding masks")
+            logging.info(output.shape)
+            logging.info(output)
+        
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
+
+        if self.verbose:
+            logging.info("output after padding masks")
+            logging.info(output.shape)
+            logging.info(output)
+        
+
         output = output.reshape(output.shape[0], -1)  # (batch_size, seq_length * d_model)
         output = self.output_layer(output)  # (batch_size, num_classes)
 
+        if self.verbose:
+            logging.info("output after padding masks")
+            logging.info("output after final layer ")
+            logging.info(output.shape)
+            logging.info(output)
+ 
         return output
 
 
@@ -448,6 +473,10 @@ class TSTransformerEncoderForecast(nn.Module):
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
         # Output
+        if self.verbose:
+            logging.info("output before padding masks")
+            logging.info(output.shape)
+            logging.info(output)
         output = output * padding_masks.unsqueeze(-1)  # zero-out padding embeddings
         if self.verbose:
             logging.info("output after padding masks")
