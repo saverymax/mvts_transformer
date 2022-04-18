@@ -116,7 +116,6 @@ def write_forecast_output(output_dict, output_dir, exp_name):
     """
     output_json = os.path.join(output_dir, "predictions", "forecast_out_{}.json".format(exp_name))
     output_csv = os.path.join(output_dir, "predictions", "forecast_out_{}.csv".format(exp_name))
-:
     with open(output_json, "w") as f:
         json.dump(output_dict, f, indent=4)
 
