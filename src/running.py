@@ -301,6 +301,8 @@ class ForecastRunner(BaseRunner):
 
             if self.verbose:
                 logging.info("Model targets and preds")
+                logging.info("ids")
+                logging.info(IDs)
                 logging.info("targets")
                 logging.info(targets.shape)
                 logging.info(targets)
@@ -374,6 +376,21 @@ class ForecastRunner(BaseRunner):
             batch_loss = torch.sum(loss).cpu().item()
             mean_loss = batch_loss / len(loss)  # mean loss (over samples)
 
+            if self.verbose:
+                logging.info("Model targets and preds in evaluate")
+                logging.info("ids")
+                logging.info(IDs)
+                logging.info("targets")
+                logging.info(targets.shape)
+                logging.info(targets)
+                logging.info("preds")
+                logging.info(predictions.shape)
+                logging.info(predictions)
+                logging.info("padding masks, 0 for ignore")
+                logging.info(padding_masks.shape)
+                logging.info(padding_masks)
+
+
             with torch.no_grad():
                 # Nice to remove the singleton dimension for output processing
                 per_batch['targets'].append(targets.squeeze(-1).tolist())
@@ -388,6 +405,13 @@ class ForecastRunner(BaseRunner):
 
             total_samples += len(loss)
             epoch_loss += batch_loss  # add total loss of batch
+
+        # This bit of logging was intended for debugging numerical error
+        if self.verbose:
+            logging.info("Data to be written after torch.no_grad")
+            logging.info(per_batch['IDs'])
+            logging.info(per_batch['targets'])
+            logging.info(per_batch['predictions'])                        
 
         epoch_loss = epoch_loss / total_samples  # average loss per element for whole epoch
         self.epoch_metrics['epoch'] = epoch_num
