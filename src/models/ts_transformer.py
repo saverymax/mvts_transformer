@@ -59,7 +59,8 @@ def model_factory(config, data):
                                                 num_classes=num_labels,
                                                 dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                 activation=config['activation'],
-                                                norm=config['normalization_layer'], freeze=config['freeze'], verbose=verbose)
+                                                norm=config['normalization_layer'], freeze=config['freeze'], 
+                                                verbose=verbose, causal_mask=config['no_causal_mask'])
 
     else:
         raise ValueError("Model class for task '{}' does not exist".format(task))
@@ -379,10 +380,11 @@ class TSTransformerEncoderForecast(nn.Module):
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
-                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False):
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False, causal_mask=False):
         super(TSTransformerEncoderForecast, self).__init__()
 
         self.verbose = verbose
+        self.causal_mask=causal_mask
 
         self.max_len = max_len
         self.d_model = d_model
@@ -462,7 +464,8 @@ class TSTransformerEncoderForecast(nn.Module):
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
-        src_masks = self.generate_forecast_mask(inp.device) 
+        if self.causal_mask:
+            src_masks = self.generate_forecast_mask(inp.device) 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
         if self.verbose:
