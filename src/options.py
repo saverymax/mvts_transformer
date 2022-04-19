@@ -92,6 +92,8 @@ class Options(object):
         self.parser.add_argument('--pollutant', choices={None, 'no2', 'pm10', 'pm25'},
                                  default=None,
                                  help="Pollutant for forecasting if using Brussels dataset. None otherwise")
+        self.parser.add_argument('--no_causal_mask', action='store_true',
+                                 help='Turn off the causal forecasting mask in the forecasting transformer. Note that this is a negative option, because the default option when using forecasting will be to have the mask on, since that is what makes forecasting forecasting. The purpose of this option is for debugging.')
         self.parser.add_argument('--remove_var', default=None, nargs='*',
                                  help="If none, no variables will be remove from Bxl data. Otherwise, specify the variables to remove. For exammple --remove_var pm10, or --remove_var pm10 covid. But don't remove the pollutant you want to forecast :(")
         self.parser.add_argument('--masking_ratio', type=float, default=0.15,
