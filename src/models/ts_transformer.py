@@ -384,7 +384,7 @@ class TSTransformerEncoderForecast(nn.Module):
         super(TSTransformerEncoderForecast, self).__init__()
 
         self.verbose = verbose
-        self.causal_mask=causal_mask
+        self.causal_mask = causal_mask
 
         self.max_len = max_len
         self.d_model = d_model
