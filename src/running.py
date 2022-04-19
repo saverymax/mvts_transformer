@@ -319,9 +319,16 @@ class ForecastRunner(BaseRunner):
                 logging.info("Loss in forecast runner")
                 logging.info(loss.shape)
                 logging.info(loss)
+                logging.info("L2 reg")
+                logging.info(self.l2_reg)
 
             batch_loss = torch.sum(loss)
             mean_loss = batch_loss / len(loss)  # mean loss (over samples) used for optimization
+            if self.verbose:
+                logging.info("Batch loss")
+                logging.info(batch_loss)
+                logging.info("mean loss")
+                logging.info(mean_loss)
 
             if self.l2_reg:
                 total_loss = mean_loss + self.l2_reg * l2_reg_loss(self.model)
@@ -331,6 +338,10 @@ class ForecastRunner(BaseRunner):
             # Zero gradients, perform a backward pass, and update the weights.
             self.optimizer.zero_grad()
             total_loss.backward()
+
+            if self.verbose:
+                logging.info("total loss after reg")
+                logging.info(total_loss)
 
             # torch.nn.utils.clip_grad_value_(self.model.parameters(), clip_value=1.0)
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=4.0)
@@ -345,14 +356,14 @@ class ForecastRunner(BaseRunner):
                 total_samples += len(loss)
                 epoch_loss += batch_loss.item()  # add total loss of batch
 
+        epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
+        self.epoch_metrics['epoch'] = epoch_num
+        self.epoch_metrics['loss'] = epoch_loss
+
         # Wandb logging
         if self.use_wandb:
             wandb.log({"train_loss": epoch_loss})
 
-
-        epoch_loss = epoch_loss / total_samples  # average loss per sample for whole epoch
-        self.epoch_metrics['epoch'] = epoch_num
-        self.epoch_metrics['loss'] = epoch_loss
         return self.epoch_metrics
 
     def evaluate(self, epoch_num=None, keep_all=True):
