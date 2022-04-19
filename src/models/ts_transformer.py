@@ -413,7 +413,8 @@ class TSTransformerEncoderForecast(nn.Module):
         """
         The number of input features for the linear layer will be the dimension of the model,
         so that it is applied independently to each element of the sequence. This differs from 
-        the regress/classi implementation, where the hidden dim and seq_len are merged into one row.
+        the regress/classi implementation, where the hidden dim and seq_len are merged into one row,
+        in order to generate 1 continuous output for the whole sequence.
         """
         output_layer = nn.Linear(d_model, num_classes)
         # no softmax (or log softmax), because CrossEntropyLoss does this internally. If probabilities are needed,
