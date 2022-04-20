@@ -57,6 +57,7 @@ def main(config):
 
         # mix is my wandb username. Change it to yours
         wandb.init(
+            dir=os.path.join(config['output_dir'], config['experiment_name']),
             project="mvts-forecasting",
             name=config['experiment_name'],
             notes=config['comment'],
@@ -153,6 +154,7 @@ def main(config):
 
     # Pre-process features
     normalizer = None
+    logger.info("Normaliztion %s", config['normalization'])
     if config['norm_from']:
         with open(config['norm_from'], 'rb') as f:
             norm_dict = pickle.load(f)
@@ -309,6 +311,7 @@ def main(config):
             metrics_names, metrics_values = zip(*aggr_metrics_val.items())
             metrics.append(list(metrics_values))
 
+        logging.info("Saving model at end of epoch")
         utils.save_model(os.path.join(config['save_dir'], 'model_{}.pth'.format(mark)), epoch, model, optimizer)
 
         # Learning rate scheduling
