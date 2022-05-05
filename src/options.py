@@ -95,7 +95,7 @@ class Options(object):
         self.parser.add_argument('--no_causal_mask', action='store_true',
                                  help='Turn off the causal forecasting mask in the forecasting transformer. Note that this is a negative option, because the default option when using forecasting will be to have the mask on, since that is what makes forecasting forecasting. The purpose of this option is for debugging.')
         self.parser.add_argument('--remove_var', default=None, nargs='*',
-                                 help="If none, no variables will be remove from Bxl data. Otherwise, specify the variables to remove. For exammple --remove_var pm10, or --remove_var pm10 covid. But don't remove the pollutant you want to forecast :(")
+                                 help="If none, no variables will be remove from Bxl data. Otherwise, specify the variables to remove. For exammple --remove_var pm10, or --remove_var pm10 covid. But don't remove the pollutant you want to forecast :(. Choose a combination of pm25, pm10, no2, covid, tun_del_parking, tun_lou_in_bas_midi_et_cambre, tun_montg_cambre, tun_ste_out_centre_et_bas_cambre, tun_vp_a12")
         self.parser.add_argument('--masking_ratio', type=float, default=0.15,
                                  help='Imputation: mask this proportion of each variable')
         self.parser.add_argument('--mean_mask_length', type=float, default=3,
@@ -175,7 +175,8 @@ class Options(object):
                                  help='Include detailed logging information from data processing/model. For debugging purposes')
         self.parser.add_argument('--use_wandb', action='store_true',
                                  help='Use wandb logging. This repository also has the ability to use tensorboard, but that was not used for forecasting experiments')
-
+        self.parser.add_argument('--wandb_dir', default='./wandb',
+                                 help='Writing directory for wandb. If none provided, will use wandb default, ./wandb')
 
 
     def parse(self):
