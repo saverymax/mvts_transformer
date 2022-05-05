@@ -1,0 +1,12 @@
+qsub run_bxl_finetune_lre4_forecast_mask_h-0_no2.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-0_no2.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_h-0_pm10.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-0_pm10.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_h-0_pm25.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-0_pm25.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_h-1_no2.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-1_no2.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_h-1_pm10.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-1_pm10.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_h-1_pm25.PBS
+qsub run_bxl_finetune_lre4_forecast_mask_none_h-1_pm25.PBS

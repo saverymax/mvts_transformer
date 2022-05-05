@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-#PBS -N beijing_finetune
+#PBS -N beijing_finetune_debug
 #PBS -o  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
 #PBS -e  /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
-#PBS -l walltime=00:10:00 
+#PBS -l walltime=02:00:00 
+##PBS -l nodes=1:ppn=36
+##PBS -l qos=debugging
 #PBS -l nodes=1:ppn=9:gpus=1:skylake 
 #PBS -l partition=gpu 
 #PBS -l pmem=5gb 
 #PBS -A default_project
+RUN_DESC="beijing_regression_finetune_debug"
 source $VSC_DATA/miniconda3/bin/activate mvts
-python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "regression finetuning" --name BeijingPM25Quality_finetuned --records_file Regression_records.xls --data_dir $VSC_DATA/thesis/data/monash_data/BeijingPM25Quality/ --data_class tsra --pattern TRAIN --val_pattern TEST --epochs 1 --lr 0.001 --optimizer RAdam --pos_encoding learnable --d_model 128 --load_model $VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth --task regression --change_output --batch_size 64
+source $VSC_DATA/wandb_info.sh
+wandb login 
+python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "Longer run with ${RUN_DESC}" --name ${RUN_DESC} --records_file Regression_records.xls --data_dir $VSC_DATA/thesis/data/monash_data/BeijingPM25Quality/ --data_class tsra --pattern TRAIN --val_pattern TEST --epochs 1 --lr 0.001 --optimizer RAdam --pos_encoding learnable --d_model 128 --task regression --change_output --batch_size 64 --verbose 
+#--use_wandb
+#--load_model $VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth 

@@ -1,22 +1,48 @@
 #!/usr/bin/env bash
-#PBS -N bxl_finetune_scratch
+#PBS -N bxl_finetune_debug
 #PBS -o /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
 #PBS -e /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
-#PBS -l walltime=00:10:00 
-##PBS -l nodes=1:ppn=9:gpus=1:skylake 
+#PBS -l walltime=00:05:00 
+#PBS -l nodes=1:ppn=9:gpus=1:skylake 
 ##PBS -l partition=gpu 
 #PBS -l nodes=1:ppn=36
 #PBS -l qos=debugging
 #PBS -l pmem=5gb 
 #PBS -A default_project
 
-# Would be nicer to name PBS job the same as this but PBS doesn't like variables besides its own.
-RUN_DESC="bxl_finetune_scratch_h-1"
+RUN_DESC="bxl_ablation_debug"
+COMMENT="Test station removal"
+WANDB_DIR=$VSC_DATA/thesis/mvts_output/wandb
 
-##model=$VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth 
-## --load_model ${model}
 source $VSC_DATA/miniconda3/bin/activate mvts
 source $VSC_DATA/wandb_info.sh
 wandb login 
-python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment ${RUN_DESC} --name BXL_finetuned --records_file Forecast_records.xls --data_dir $VSC_DATA/thesis/data/brussels_data/ --data_class bxl --pattern TRAIN --val_pattern TEST --epochs 500 --lr 0.001 --optimizer RAdam --pos_encoding learnable --d_model 128 --task forecast --change_output --batch_size 8 --seed 13 --horizon 1 --pollutant no2
-#--verbose
+#python $VSC_DATA/thesis/mvts_transformer/src/main.py --output_dir $VSC_DATA/thesis/mvts_output/models --comment "${COMMENT} ${RUN_DESC}" --name ${RUN_DESC} --records_file $VSC_DATA/thesis/mvts_output/records_xls/Forecast_records.xls --data_dir $VSC_DATA/thesis/multi-modal-pollution/data/mvts_train --data_class bxl --epochs 1 --lr 0.0001 --optimizer RAdam --pos_encoding learnable --d_model 128 --task forecast --change_output --batch_size 4 --seed 13 --horizon 1 --pollutant pm10 --val_ratio=0.1 --use_wandb --remove_var station_int
+#--wandb_dir ${WANDB_DIR}
+#--no_causal_mask 
+
+## --load_model ${model}
+#--remove_var no2 covid station_int 
+#model=$VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth 
+
+python /data/leuven/346/vsc34628/thesis/mvts_transformer/src/main.py \
+    --output_dir /data/leuven/346/vsc34628/thesis/mvts_output/models \
+    --comment "no pretrained finetuning for bxl_finetune_lre4_ablation_covid_h-1_no2" \
+    --name bxl_debug_ablation \
+    --records_file /data/leuven/346/vsc34628/thesis/mvts_output/records_xls/Forecast_records_bxl_finetune_ablation_debug.xls \
+    --data_dir /data/leuven/346/vsc34628/thesis/data/brussels_data/ \
+    --data_class bxl \
+    --epochs 1 \
+    --lr 0.0001 \
+    --optimizer RAdam \
+    --pos_encoding learnable \
+    --d_model 128 \
+    --task forecast \
+    --change_output \
+    --batch_size 16 \
+    --seed 13 \
+    --horizon 1 \
+    --pollutant no2 \
+    --remove_var tunnels \
+    --verbose \
+    --val_ratio=0.1

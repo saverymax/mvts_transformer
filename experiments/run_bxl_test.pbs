@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#PBS -N bxl_debug_eval_h-1_pm10
+#PBS -o /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -e /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -l walltime=00:05:00 
+#PBS -l nodes=1:ppn=36
+#PBS -l qos=debugging
+#PBS -l pmem=5gb 
+#PBS -A default_project
+
+# Would be nicer to name PBS job the same as this but PBS doesn't like variables besides its own.
+RUN_DESC="bxl_debug_forecast_h-1_pm10"
+COMMENT="debugging forecasts on test data with bxl_eval_h-1_pm10"
+#MODEL=$VSC_DATA/thesis/mvts_output/models/BeijingPM25Quality_pretraining_2022-03-10_20-46-27_I1W/checkpoints/model_best.pth 
+source $VSC_DATA/miniconda3/bin/activate mvts
+source $VSC_DATA/wandb_info.sh
+wandb login 
+python /data/leuven/346/vsc34628/thesis/mvts_transformer/src/main.py \
+    --output_dir /data/leuven/346/vsc34628/thesis/mvts_output/models \
+    --comment "${COMMENT} ${RUN_DESC}" \
+    --name ${RUN_DESC} \
+    --records_file /data/leuven/346/vsc34628/thesis/mvts_output/records_xls/Forecast_debug_records_bxl_eval_h-1_pm10.xls \
+    --data_dir /data/leuven/346/vsc34628/thesis/multi-modal-pollution/data/mvts_train \
+    --data_class bxl \
+    --lr 0.001 \
+    --optimizer RAdam \
+    --pos_encoding learnable \
+    --d_model 128 \
+    --task forecast \
+    --batch_size 4 \
+    --seed 13 \
+    --horizon 1 \
+    --pollutant pm10 \
+    --test_only testset \
+    --test_pattern bxl_test \
+    --load_model /data/leuven/346/vsc34628/thesis/mvts_output/models/bxl_debug_h-1_pm10_2022-04-20_11-20-06_O33/checkpoints/model_best.pth

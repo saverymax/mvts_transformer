@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#PBS -N bxl_finetune_lre4_station_h-5_pm25
+#PBS -o /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -e /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -l walltime=02:00:00 
+#PBS -l nodes=1:ppn=9:gpus=1:skylake 
+#PBS -l partition=gpu 
+#PBS -l pmem=5gb 
+#PBS -A default_project
+source /data/leuven/346/vsc34628/miniconda3/bin/activate mvts; source /data/leuven/346/vsc34628/wandb_info.sh; wandb login;
+python /data/leuven/346/vsc34628/thesis/mvts_transformer/src/main.py \
+    --output_dir /data/leuven/346/vsc34628/thesis/mvts_output/models \
+    --comment "no pretrained finetuning with station for bxl_finetune_lre4_station_h-5_pm25" \
+    --name bxl_finetune_lre4_station_h-5_pm25 \
+    --records_file /data/leuven/346/vsc34628/thesis/mvts_output/records_xls/Forecast_records_bxl_finetune_lre4_station_h-5_pm25.xls \
+    --data_dir /data/leuven/346/vsc34628/thesis/multi-modal-pollution/data/mvts_train \
+    --data_class bxl \
+    --epochs 10000 \
+    --lr 0.0001 \
+    --optimizer RAdam \
+    --pos_encoding learnable \
+    --d_model 128 \
+    --task forecast \
+    --change_output \
+    --batch_size 16 \
+    --seed 13 \
+    --horizon 5 \
+    --pollutant pm25 \
+    --use_wandb \
+    --val_ratio=0.1

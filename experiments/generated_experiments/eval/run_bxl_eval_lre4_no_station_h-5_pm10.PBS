@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#PBS -N bxl_eval_lre4_no_station_h-5_pm10
+#PBS -o /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -e /data/leuven/346/vsc34628/thesis/mvts_output/job_output/
+#PBS -l walltime=00:10:00 
+#PBS -l nodes=1:ppn=36
+#PBS -l pmem=5gb
+#PBS -A default_project
+source /data/leuven/346/vsc34628/miniconda3/bin/activate mvts
+
+# Nice to use batch_size of 4 because each station has 4 time series.
+python /data/leuven/346/vsc34628/thesis/mvts_transformer/src/main.py \
+    --output_dir /data/leuven/346/vsc34628/thesis/mvts_output/models \
+    --comment "generating forecasts on test data with bxl_eval_lre4_no_station_h-5_pm10" \
+    --name bxl_eval_lre4_no_station_h-5_pm10 --records_file /data/leuven/346/vsc34628/thesis/mvts_output/records_xls/Forecast_records_bxl_eval_lre4_no_station_h-5_pm10.xls \
+    --data_dir /data/leuven/346/vsc34628/thesis/multi-modal-pollution/data/mvts_train \
+    --data_class bxl \
+    --d_model 128 \
+    --task forecast \
+    --batch_size 4 \
+    --seed 13 \
+    --horizon 5 \
+    --pollutant pm10 \
+    --test_only testset \
+    --test_pattern bxl_test \
+    --norm_from /data/leuven/346/vsc34628/thesis/mvts_output/models/bxl_finetune_lre4_no_station_h-5_pm10*/normalization.pickle \
+    --remove_var station_int \
+    --load_model /data/leuven/346/vsc34628/thesis/mvts_output/models/bxl_finetune_lre4_no_station_h-5_pm10*/checkpoints/model_best.pth
