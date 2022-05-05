@@ -52,7 +52,7 @@ Classification: http://www.timeseriesclassification.com/Downloads/Archives/Multi
 
 Regression: https://zenodo.org/record/3902651#.YB5P0OpOm3s
 
-Forecasting: See https://github.com/saverymax/multi-modal-pollution. 
+Forecasting: See https://github.com/saverymax/multi-modal-pollution/data/mvts_train, both air_quality_bxl_test.csv and air_quality_bxl_train.csv
 
 ## Example commands
 
@@ -76,13 +76,41 @@ tensorboard dev upload --name my_exp --logdir path/to/output_dir
 
 ### Forecasting
 
-Note that the setting of the seed is handled in main.py: 
 Forecasting utility has been added to this libary. This includes adding a new data for handling air pollution data in Brussels, a ForecastDataset class, the collate function collate_forecast for making batches from ForecastDataset,and a ForecastRunner class.
 
-To finetune the transformer for forecasting...
+To train the model from scratch for forecasting, run 
+```
+python src/main.py \
+    --output_dir mvts_output/models \
+    --comment "no pretrained finetuning" \
+    --name bxl_finetune_lre5_no_station_h-1_no2 \
+    --records_file mvts_output/records_xls/Forecast_records_bxl_finetune_lre5_no_station_h-1_no2.xls \
+    --data_dir brussels_data/ \
+    --data_class bxl \
+    --epochs 10000 \
+    --lr 0.00001 \
+    --optimizer RAdam \
+    --pos_encoding learnable \
+    --d_model 128 \
+    --task forecast \
+    --change_output \
+    --batch_size 16 \
+    --seed 13 \
+    --horizon 1 \
+    --pollutant no2 \
+    --use_wandb \
+    --remove_var station_int \
+    --val_ratio=0.1
+```
+See the experiments/generated_experiments/finetune in this repository for all experiments as described in the thesis work associated with the forecasting aspect of this project at https://saverymax.github.io/multi-modal-pollution/, specifically the [evaluation scripts](https://github.com/saverymax/multi-modal-pollution/tree/main/src/evaluation). For example, if using the Brussels data you can specify forecasting --pollutant no2, pm10, or pm25
 
+The data for Brussels air pollution can be in found https://github.com/saverymax/multi-modal-pollution/tree/main/data/mvts_train. The train and test sets can be placed in the directory you pass to --data_dir, such as brussels_data/. Anywhere is fine, as long as your model can access it during training. 
+
+If using forecasting, Wandb can be used for logging experiments. However, you will need to change the username in main.py and set up the API credentials. Wandb was only used for forecasting, as it was not included in the original repository that this code was forked from.
 
 ### Regression
+
+The following documentation is unchanged from the original unforked version of this repository.
 
 (Note: the loss reported for regression is the Mean Square Error, i.e. without the Root)
 
@@ -97,6 +125,8 @@ python src/main.py --output_dir experiments --comment "classification from Scrat
 ```
 
 ## Pre-train models (unsupervised learning through input masking)
+
+Pre-training is not supported for forecasting, though it is certainly possible to develop an implementation, using the causal mask in the forecasting module of the transformer.
 
 Can be used for any downstream task, e.g. regression, classification, imputation.
 
