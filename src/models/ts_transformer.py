@@ -60,7 +60,7 @@ def model_factory(config, data):
                                                 dropout=config['dropout'], pos_encoding=config['pos_encoding'],
                                                 activation=config['activation'],
                                                 norm=config['normalization_layer'], freeze=config['freeze'], 
-                                                verbose=verbose, causal_mask=config['no_causal_mask'])
+                                                verbose=verbose, no_causal_mask=config['no_causal_mask'])
 
     else:
         raise ValueError("Model class for task '{}' does not exist".format(task))
@@ -380,11 +380,11 @@ class TSTransformerEncoderForecast(nn.Module):
     """
 
     def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, num_classes,
-                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False, causal_mask=False):
+                 dropout=0.1, pos_encoding='fixed', activation='gelu', norm='BatchNorm', freeze=False, verbose=False, no_causal_mask=True):
         super(TSTransformerEncoderForecast, self).__init__()
 
         self.verbose = verbose
-        self.causal_mask = causal_mask
+        self.no_causal_mask = no_causal_mask
 
         self.max_len = max_len
         self.d_model = d_model
@@ -424,7 +424,9 @@ class TSTransformerEncoderForecast(nn.Module):
     def generate_forecast_mask(self, device):
         """
         Creates Float mask, for autoregressive forecasting.
-        See https://github.com/idiap/fast-transformers/blob/2fe048a14c2e67787f553e899123ca4ba9f27e76/fast_transformers/masking.py#L204
+        See https://github.com/idiap/fast-transformers/blob/2fe048a14c2e67787f553e899123ca4ba9f27e76/fast_transformers/masking.py#L204.
+        Note that from pytorch docs: "For a float mask, the mask values will be added to the attention weight."
+
         Args: 
             device: Computing device taken from input
 
@@ -461,17 +463,21 @@ class TSTransformerEncoderForecast(nn.Module):
             logging.info("src in ts transformer encoder")
             logging.info(X.shape)
             logging.info(X)
+            logging.info("no masking status")
+            logging.info(self.no_causal_mask)
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(
             self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
-        if self.causal_mask:
+        if not self.no_causal_mask:
             src_masks = self.generate_forecast_mask(inp.device) 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(inp, src_masks, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
         if self.verbose:
             logging.info("output from ts")
             logging.info(output)
+            logging.info("Causal masks")
+            logging.info(src_masks)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
