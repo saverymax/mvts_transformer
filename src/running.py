@@ -428,6 +428,12 @@ class ForecastRunner(BaseRunner):
         self.epoch_metrics['epoch'] = epoch_num
         self.epoch_metrics['loss'] = epoch_loss
 
+        # At the end of the epoch show the predictions
+        logging.info("Last predictions from batch")
+        logging.info(predictions)
+        logging.info("And the corresponding targets")
+        logging.info(targets)
+
         # Wandb logging
         if self.use_wandb:
             wandb.log({"val_loss": epoch_loss})
