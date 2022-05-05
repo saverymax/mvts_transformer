@@ -1,6 +1,6 @@
 # Multivariate Time Series Transformer Framework
 
-Documentation for the forecasting work and use of the multivariate transformer for forecasting Brussels pollution levels during the COVID-19 lockdowns can be found at [https://saverymax.github.io/multi-modal-pollution/].
+Documentation for the forecasting work and use of the multivariate transformer for forecasting Brussels pollution levels during the COVID-19 lockdowns can be found at https://saverymax.github.io/multi-modal-pollution/.
 
 This code originally corresponded to the [paper](https://dl.acm.org/doi/10.1145/3447548.3467401): George Zerveas et al. **A Transformer-based Framework for Multivariate Time Series Representation Learning**, in _Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '21), August 14-18, 2021_.
 ArXiV version: https://arxiv.org/abs/2010.02803. 
