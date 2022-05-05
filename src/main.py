@@ -42,7 +42,6 @@ def main(config):
     if config['verbose']:
         logging.info("Using verbose logging")
 
-    # TODO: Add actual seq len of ts to config, but it's dynamically defined later 
     if config['use_wandb']:
         wandb_config = dict(
             data_class=config['data_class'],
@@ -53,11 +52,13 @@ def main(config):
             max_len=config['max_seq_len'],
             task=config['task'],
             pollutant=config['pollutant'],
+            horizon=config['horizon'],
         )
 
+        #logging.info("Will save wandb output to %s", config['wandb_dir'])
+        #dir=config['wandb_dir'],
         # mix is my wandb username. Change it to yours
         wandb.init(
-            dir=os.path.join(config['output_dir'], config['experiment_name']),
             project="mvts-forecasting",
             name=config['experiment_name'],
             notes=config['comment'],
