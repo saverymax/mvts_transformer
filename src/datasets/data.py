@@ -129,24 +129,49 @@ class BxlData(BaseData):
             df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_test.csv"))
         else:
             df = pd.read_csv(os.path.join(root_dir, "air_quality_bxl_train.csv"))
+            # Little bit to check with 1 station.
+            #df.drop(df[df.station != "STA-BETR731"].index, inplace=True)
+            #logging.info("reduced df")
+            #logging.info(df.shape)
+            #logging.info(df)
+
         # Could also sort on split_time
         df.sort_values(by=["station_subset", "time"], ascending=[True, True], inplace=True)
         df.set_index(keys="station_subset", inplace=True)
+
         # For variable ablation experiments
+        # Copy so as not to modify the original df...
         self.all_df = df[[
                 "pm25", "pm10","no2","covid", "station_int",
                 "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
-                "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]]
-        if self.remove_var is not None:
-            logging.info("Dropping variable {}".format(self.remove_var))
-            self.all_df.drop(self.remove_var, axis=1, inplace=True)
-        logging.info("Columns in df")
-        logging.info(self.all_df.columns)
-            
+                "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]].copy()
+
         # ID for each sample, where each sample is a time series.
         # Each ID will be for a measuring station (or station subdivided into multiple ts)
         self.all_IDs = self.all_df.index.unique()  # (ids for each station
         self.labels_df = pd.DataFrame(self.all_df[self.pollutant], dtype=np.float32)
+
+        if self.remove_var is not None:
+            logging.info("Dropping variable {}".format(self.remove_var))
+            # Remove all variables except the pollutant to be predicted
+            if "all" in self.remove_var:
+                logging.info("Dropping all variables except pollutant")
+                self.all_df = self.all_df[[self.pollutant]].copy()
+            elif "tunnels" in self.remove_var:
+                logging.info("Dropping all tunnels from df")
+                # Not ideal way to handle this option
+                # Also remove station because this is only for 1 experiment
+                # where station should not be used.
+                tunnels = ["station_int", "tun_del_parking","tun_lou_in_bas_midi_et_cambre",
+                        "tun_montg_cambre","tun_ste_out_centre_et_bas_cambre","tun_vp_a12"]
+                self.all_df.drop(tunnels, axis=1, inplace=True)
+            # Otherwise use the provided list or string for specific variables
+            else:
+                self.all_df.drop(self.remove_var, axis=1, inplace=True)
+        logging.info("Columns in df")
+        logging.info(self.all_df.columns)
+
+            
         
         if self.verbose:
             pd.set_option('display.max_columns', 10)
