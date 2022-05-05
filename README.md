@@ -76,7 +76,7 @@ tensorboard dev upload --name my_exp --logdir path/to/output_dir
 
 ### Forecasting
 
-Forecasting utility has been added to this libary. This includes adding a new data for handling air pollution data in Brussels, a ForecastDataset class, the collate function collate_forecast for making batches from ForecastDataset,and a ForecastRunner class.
+Forecasting utility has been added to this libary. This includes adding a new data class for handling air pollution data in Brussels, a ForecastDataset class, the collate function collate_forecast for making batches from ForecastDataset, and a ForecastRunner class.
 
 To train the model from scratch for forecasting, run 
 ```
