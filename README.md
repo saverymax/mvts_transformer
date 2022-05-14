@@ -1,6 +1,6 @@
 # Multivariate Time Series Transformer Framework
 
-Documentation for the forecasting work and use of the multivariate transformer for forecasting Brussels pollution levels during the COVID-19 lockdowns can be found at https://saverymax.github.io/multi-modal-pollution/.
+Documentation for the forecasting work and use of the multivariate transformer for forecasting pollution levels in Belgium during the COVID-19 lockdowns can be found at https://saverymax.github.io/multi-modal-pollution/.
 
 This code originally corresponded to the [paper](https://dl.acm.org/doi/10.1145/3447548.3467401): George Zerveas et al. **A Transformer-based Framework for Multivariate Time Series Representation Learning**, in _Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '21), August 14-18, 2021_.
 ArXiV version: https://arxiv.org/abs/2010.02803. 
@@ -76,7 +76,7 @@ tensorboard dev upload --name my_exp --logdir path/to/output_dir
 
 ### Forecasting
 
-Forecasting utility has been added to this libary. This includes adding a new data class for handling air pollution data in Brussels, a ForecastDataset class, the collate function collate_forecast for making batches from ForecastDataset, and a ForecastRunner class.
+Forecasting utility has been added to this libary. This includes adding a new data class for handling air pollution data in Belgium, a ForecastDataset class, the collate function collate_forecast for making batches from ForecastDataset, and a ForecastRunner class.
 
 To train the model from scratch for forecasting, run 
 ```
@@ -102,9 +102,9 @@ python src/main.py \
     --remove_var station_int \
     --val_ratio=0.1
 ```
-See the experiments/generated_experiments/finetune in this repository for all experiments as described in the thesis work associated with the forecasting aspect of this project at https://saverymax.github.io/multi-modal-pollution/, specifically the [evaluation scripts](https://github.com/saverymax/multi-modal-pollution/tree/main/src/evaluation). For example, if using the Brussels data you can specify forecasting --pollutant no2, pm10, or pm25
+See the experiments/generated_experiments/finetune in this repository for all experiments as described in the thesis work associated with the forecasting aspect of this project at https://saverymax.github.io/multi-modal-pollution/, specifically the [evaluation scripts](https://github.com/saverymax/multi-modal-pollution/tree/main/src/evaluation). For example, if using the Belgium data you can specify forecasting --pollutant no2, pm10, or pm25
 
-The data for Brussels air pollution can be in found https://github.com/saverymax/multi-modal-pollution/tree/main/data/mvts_train. The train and test sets can be placed in the directory you pass to --data_dir, such as brussels_data/. Anywhere is fine, as long as your model can access it during training. 
+The data for Belgium air pollution can be in found https://github.com/saverymax/multi-modal-pollution/tree/main/data/mvts_train. The train and test sets can be placed in the directory you pass to --data_dir, such as belgium_data/. Anywhere is fine, as long as your model can access it during training. 
 
 If using forecasting, Wandb can be used for logging experiments. However, you will need to change the username in main.py and set up the API credentials. Wandb was only used for forecasting, as it was not included in the original repository that this code was forked from.
 
