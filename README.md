@@ -52,7 +52,7 @@ Classification: http://www.timeseriesclassification.com/Downloads/Archives/Multi
 
 Regression: https://zenodo.org/record/3902651#.YB5P0OpOm3s
 
-Forecasting: See https://github.com/saverymax/tree/main/multi-modal-pollution/data/mvts_train, both air_quality_bxl_test.csv and air_quality_bxl_train.csv
+Forecasting: See https://github.com/saverymax/multi-modal-pollution/tree/main/data/mvts_train, both air_quality_bxl_test.csv and air_quality_bxl_train.csv
 
 ## Example commands
 
